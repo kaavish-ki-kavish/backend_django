@@ -508,97 +508,38 @@ def scale_strokes(x, y, width, height):
     return scaled_x, scaled_y
 
 
-# import pickle
-# import pandas as pd
-# import os
+
+
 # import numpy as np
-#
-# __location__ = os.path.realpath(
-#     os.path.join(os.getcwd(), os.path.dirname(__file__)))
-#
-#
-# class RandomForestClassifier:
-#     def __init__(self):
-#         file = open(os.path.join(__location__, 'random_forest_model.sav'), 'rb')
-#         self.model = pickle.load(file)
-#
-#     def preprocessing(self, input_data):
-#         return input_data
-#
-#     def predict(self, input_data):
-#         a = self.model.predict_proba(input_data)
-#         return a
-#
-#     def postprocessing(self, input_data):
-#         # label = "<=50K"
-#         # if input_data[1] > 0.5:
-#         #     label = ">50K"
-#         # return {"probability": input_data, "label": label, "status": "OK"}
-#         return input_data
-#
-#     def compute_prediction(self, input_data):
-#         try:
-#             input_data = self.preprocessing(input_data)
-#             #prediction = self.predict(input_data)[0][0]  # only one sample
-#             prediction = np.amax(self.predict(input_data))
-#             # prediction = self.postprocessing(prediction)
-#         except Exception as e:
-#             return {"status": "Error", "message": str(e)}
-#
-#         return prediction
+# import matplotlib.pyplot as plt
+# from PIL import Image, ImageDraw
 #
 #
-# import random
-# import copy
+# def cordToImage(x, y):
+#     x_0, y_0 = min(x), min(y)
+#     x_n, y_n = max(x), max(y)
+#     w = x_n - x_0 + 1
+#     h = y_n - y_0 + 1
+#     padding = 20
+#     x_origin = [x_cord - x_0 for x_cord in x]
+#     y_origin = [y_cord - y_0 for y_cord in y]
+#     x_y = list(zip(x_origin, y_origin))
+#
+#     im = Image.new('RGB', (w + padding, h + padding), (0, 0, 0))
+#     draw = ImageDraw.Draw(im)
+#     draw.line(x_y)
+#     img_array = np.array(im)
+#     plt.axis('off')
+#     plt.imshow(img_array)
+#     plt.show()
 #
 #
-# # points = np.arange(20)
-# # points = points.tolist()
-# # whole_x = copy.deepcopy(points)
-# # whole_y = copy.deepcopy(points)
-# # random.shuffle(whole_y)
-# #
-# # print("x:  ", whole_x)
-# # print("y:  ", whole_y)
 #
-# whole_x = [106, 79, 61, 43, 25, 14, 3, 0, 1, 10, 23, 42, 65, 83, 99, 121, 139, 157, 174, 209, 221, 233, 251, 255, 255, 254, 248, 226, 201, 163, 109, 107, 104, 118, 139, 160, 162, 159, 139, 124, 117]
-# whole_y = [89, 73, 71, 82, 102, 121, 150, 168, 195, 219, 231, 241, 247, 245, 238, 213, 225, 230, 233, 231, 225, 213, 181, 165, 143, 130, 118, 100, 89, 83, 87, 85, 62, 33, 10, 0, 5, 12, 34, 57, 86]
-# scale_x, scale_y = scale_strokes(whole_x, whole_y, 128, 128)
-# hbr = hbr_feature_extract(scale_x, scale_y, {len(whole_x)})
 #
-# r_m = RandomForestClassifier()
-# print(r_m.compute_prediction(hbr))
-
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
-
-
-def cordToImage(x, y):
-    x_0, y_0 = min(x), min(y)
-    x_n, y_n = max(x), max(y)
-    w = x_n - x_0 + 1
-    h = y_n - y_0 + 1
-    padding = 20
-    x_origin = [x_cord - x_0 for x_cord in x]
-    y_origin = [y_cord - y_0 for y_cord in y]
-    x_y = list(zip(x_origin, y_origin))
-
-    im = Image.new('RGB', (w + padding, h + padding), (0, 0, 0))
-    draw = ImageDraw.Draw(im)
-    draw.line(x_y)
-    img_array = np.array(im)
-    plt.axis('off')
-    plt.imshow(img_array)
-    plt.show()
-
-
-
-
-
-
-
-
-x = [106, 79, 61, 43, 25, 14, 3, 0, 1, 10, 23, 42, 65, 83, 99, 121, 139, 157, 174, 209, 221, 233, 251, 255, 255, 254, 248, 226, 201, 163, 109, 107, 104, 118, 139, 160, 162, 159, 139, 124, 117]
-y = [89, 73, 71, 82, 102, 121, 150, 168, 195, 219, 231, 241, 247, 245, 238, 213, 225, 230, 233, 231, 225, 213, 181, 165, 143, 130, 118, 100, 89, 83, 87, 85, 62, 33, 10, 0, 5, 12, 34, 57, 86]
-cordToImage(x, y)
+#
+#
+#
+#
+# x = [106, 79, 61, 43, 25, 14, 3, 0, 1, 10, 23, 42, 65, 83, 99, 121, 139, 157, 174, 209, 221, 233, 251, 255, 255, 254, 248, 226, 201, 163, 109, 107, 104, 118, 139, 160, 162, 159, 139, 124, 117]
+# y = [89, 73, 71, 82, 102, 121, 150, 168, 195, 219, 231, 241, 247, 245, 238, 213, 225, 230, 233, 231, 225, 213, 181, 165, 143, 130, 118, 100, 89, 83, 87, 85, 62, 33, 10, 0, 5, 12, 34, 57, 86]
+# cordToImage(x, y)

@@ -11,7 +11,6 @@ from rest_framework.views import APIView
 from django.db.models import Max, Min
 import os, datetime, random, copy
 
-
 from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise
 
 from rest_framework.response import Response
@@ -22,6 +21,7 @@ from .utils import get_and_authenticate_user, create_user_account, create_child_
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
 from .feature_extractor import hbr_feature_extract, scale_strokes
+from .urduCNN import UrduCnnScorer
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
@@ -31,7 +31,6 @@ import torch.nn.functional as F
 import torchvision
 from torchvision import datasets, transforms
 from torch.utils import data
-from PIL import Image
 import torch.nn as nn
 
 # from django.shortcuts import render
@@ -219,57 +218,17 @@ class AuthViewSet(viewsets.GenericViewSet):
     #         data=serializers.DrawingExerciseSerializer(DrawingExercise.objects.all(), many=True).data,
     #         status=status.HTTP_204_NO_CONTENT)
 
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def get_urdu_score(self, request):
 
-def cordToImage(x, y):
-    x_0, y_0 = min(x), min(y)
-    x_n, y_n = max(x), max(y)
-    w = x_n - x_0 + 1
-    h = y_n - y_0 + 1
-    padding = 20
-    x_origin = [x_cord - x_0 for x_cord in x]
-    y_origin = [y_cord - y_0 for y_cord in y]
-    x_y = list(zip(x_origin, y_origin))
+        x = request.data.get('x', None)
+        y = request.data.get('y', None)
+        urdu_scorer = UrduCnnScorer(x, y)
+        score = urdu_scorer.get_score()
+        response = {
+            'message': 'Successful',
+            'prediction': score,
+        }
+        return Response(response)
 
-    im = Image.new('RGB', (w + padding, h + padding), (0, 0, 0))
-    draw = ImageDraw.Draw(im)
-    draw.line(x_y)
-    img_array = np.array(im)
-
-
-def crop_image(array):
-    ret3, img = cv.threshold(array, 200, 255, cv.THRESH_BINARY)  # +cv.THRESH_OTSU)
-
-    # unique_elements, counts_elements = np.unique(img, return_counts=True)
-
-    desired_size = 256
-    h, w = img.shape
-
-    plt.imshow(img, 'gray')
-    plt.title("original image")
-    plt.show()
-
-    y, x = np.where(img == 0)
-    y_min, y_max = y.min(), y.max()
-    x_min, x_max = x.min(), x.max()
-
-    img = img[y_min: y_max, x_min: x_max]
-
-    old_size = img.shape[:2]  # old_size is in (height, width) format
-
-    ratio = float(desired_size) / max(old_size)
-    new_size = tuple([int(x * ratio) for x in old_size])
-
-    # new_size should be in (width, height) format
-    img = cv.resize(img, (new_size[1], new_size[0]))
-
-    delta_w = desired_size - new_size[1]
-    delta_h = desired_size - new_size[0]
-    top, bottom = delta_h // 2, delta_h - (delta_h // 2)
-    left, right = delta_w // 2, delta_w - (delta_w // 2)
-    # img = 255 - img
-    color = [255, 0, 0]
-    img = cv.copyMakeBorder(img, top, bottom, left, right, cv.BORDER_CONSTANT,
-                            value=color)
-
-    return img
 
