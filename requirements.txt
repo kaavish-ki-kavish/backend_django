@@ -1,0 +1,6 @@
+django
+gunicorn
+django-heroku
+pyGithub
+djangorestframework
+whitenoise
