@@ -136,14 +136,8 @@ class AuthViewSet(viewsets.GenericViewSet):
         edit_child_profile(**serializer.validated_data, parent=request.user.pk)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    # def get_prediction(self, request):
-    #     r_m = RandomForestClassifier()
-    #     return JsonResponse(r_m,safe=False)
-    #     #return JsonResponse('prediction is'.format(r_m.compute_prediction(request.data)), safe=False)
-
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    def get_prediction(self, request):
+    def get_prediction_drawing(self, request):
         # pram = request.data.get('array_in',None)
         # r_m = RandomForestClassifier()
         # prediction = r_m.compute_prediction(pram)
@@ -163,6 +157,19 @@ class AuthViewSet(viewsets.GenericViewSet):
         response = {
             'message': 'Successful',
             'prediction': prediction,
+        }
+        return Response(response)
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def get_urdu_score(self, request):
+
+        x = request.data.get('x', None)
+        y = request.data.get('y', None)
+        urdu_scorer = UrduCnnScorer(x, y)
+        score = urdu_scorer.get_score()
+        response = {
+            'message': 'Successful',
+            'prediction': score,
         }
         return Response(response)
 
@@ -217,18 +224,3 @@ class AuthViewSet(viewsets.GenericViewSet):
     #     return Response(
     #         data=serializers.DrawingExerciseSerializer(DrawingExercise.objects.all(), many=True).data,
     #         status=status.HTTP_204_NO_CONTENT)
-
-    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    def get_urdu_score(self, request):
-
-        x = request.data.get('x', None)
-        y = request.data.get('y', None)
-        urdu_scorer = UrduCnnScorer(x, y)
-        score = urdu_scorer.get_score()
-        response = {
-            'message': 'Successful',
-            'prediction': score,
-        }
-        return Response(response)
-
-

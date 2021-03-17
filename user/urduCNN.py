@@ -61,17 +61,17 @@ class UrduCnnScorer:
         w = x_n - x_0 + 1
         h = y_n - y_0 + 1
         padding = 20
-        x_origin = [x_cord + padding//2 - x_0 for x_cord in self.x]
-        y_origin = [y_cord + padding//2 - y_0 for y_cord in self.y]
+        x_origin = [x_cord + padding // 2 - x_0 for x_cord in self.x]
+        y_origin = [y_cord + padding // 2 - y_0 for y_cord in self.y]
         x_y = list(zip(x_origin, y_origin))
 
         im = Image.new('RGB', (w + padding, h + padding), (0, 0, 0))
         draw = ImageDraw.Draw(im)
         draw.line(x_y)
         img_array = np.array(im)
-        # plt.imshow(img_array[:, :, 0])
-        # plt.axis('off')
-        # plt.show()
+        plt.imshow(img_array[:, :, 0])
+        plt.axis('off')
+        plt.show()
         return img_array[:, :, 0]
 
     def crop_image(self, array):
@@ -166,7 +166,6 @@ class UrduCnnScorer:
             # plt.title(f"{NUM2LABEL[predicted]}: {top3p.tolist()[0][0]}")
             # plt.show()
 
-
     def get_score(self):
         pre = self.preprocessing()
         score = self.test_img(pre)
@@ -184,13 +183,13 @@ class UrduCnnScorer:
 # x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
 # y = [50, 45, 40, 35, 30, 25, 15, 10, 5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
 
-# x = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+# x = [2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
 # y = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-#
-# urdu_scorer = UrduCnnScorer(x, y)
-# #urdu_scorer.preprocessing()
-# score = urdu_scorer.get_score()
-# print(score)
+
+#urdu_scorer = UrduCnnScorer(x, y)
+#urdu_scorer.preprocessing()
+#score = urdu_scorer.get_score()
+#print(score)
 #
 # x = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
 # y = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
