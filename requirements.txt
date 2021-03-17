@@ -11,3 +11,7 @@ scipy==1.4.1
 djangorestframework==3.12.2
 Pillow==8.1.2
 scikit_learn==0.24.1
+whitenoise
+gunicorn
+django-heroku
+pyGithub
