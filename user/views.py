@@ -259,6 +259,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             scores.append(scorer.test_img(img)[0, label])
                 
             tf_data = {
+                'exercise': 1,
                 'char': char, 
                 'img': img.tolist(), 
                 'whole_x' : whole_x, 
