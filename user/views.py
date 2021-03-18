@@ -220,11 +220,8 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         try:
             serializer = self.get_serializer(data=request.data)
-            print('here0')
             serializer.is_valid(raise_exception=True)
-            print('here1')
             data = serializer.validated_data
-            print('here2')
             img = np.array(data['img'])
             scores = []
 
@@ -236,9 +233,11 @@ class AuthViewSet(viewsets.GenericViewSet):
                 whole_x = data['whole_x']
                 whole_y = data['whole_y']
                 penup = data['pen_up']
-
+                print('here0')
                 p_features, s_features = get_feature_vector(char)
+                print('here1')
                 scores.append(feature_scorer(img, p_features, s_features, verbose=1))
+                print('here2')
                 scores.append(perfect_scorer(whole_x, whole_y, penup, char))
 
             response = {
@@ -247,5 +246,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
             return Response(response)
         except:
-            print(type(request), request, request.data)
-
+            response = {
+                'scores': [0.00001, 0.000002],
+            }
+            return Response(response)
