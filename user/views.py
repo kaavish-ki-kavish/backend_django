@@ -16,7 +16,7 @@ from .models import ChildProfile, Characters, Session, History, ObjectWord, Colo
 from rest_framework.response import Response
 from . import serializers
 from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
-    edit_child_profile, get_whole_stroke, get_feature_vector, feature_scorer, perfect_scorer
+    edit_child_profile, get_whole_stroke
 
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
