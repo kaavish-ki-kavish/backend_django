@@ -12,5 +12,4 @@ whitenoise
 gunicorn
 django-heroku
 pyGithub
-torchvision
-torch
+tensorflow-cpu
