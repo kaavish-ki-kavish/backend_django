@@ -216,7 +216,12 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['POST'], detail=False)
     def get_score(self, request):
-        data = request.json
+
+        try:
+            data = request.json
+        except:
+            print(type(request), request)
+
         img = np.array(data['img'])
         scores = []
 
