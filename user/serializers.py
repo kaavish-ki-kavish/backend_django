@@ -135,3 +135,12 @@ class ColoringExerciseSerializer(serializers.ModelSerializer):
     class Meta:
         model = ColoringExercise
         fields = ('coloring_id', 'ref_image_path', 'level', 'sound_path', 'label')
+
+        
+class DataEntrySerializer(serializers.Serializer):
+    char = serializers.CharField(max_length= 255, required= True)
+    data = serializers.ListField(
+        child=serializers.ListField(
+            child = serializers.ListField(
+            child= serializers.IntegerField())))
+    exercise = serializers.IntegerField()
