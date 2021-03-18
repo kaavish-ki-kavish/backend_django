@@ -268,7 +268,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             }
         
             response = requests.post(url, json=tf_data)        
-            print(response.json()) 
+            print(response.data, response.data.scores) 
             #p_features, s_features = get_feature_vector(char)
             a = 1 #feature_scorer(img, p_features,s_features, verbose= 1)
             b = 1 #perfect_scorer(whole_x, whole_y, penup, char)
