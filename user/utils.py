@@ -169,9 +169,9 @@ def get_feature_vector(t_char):
 
 import tensorflow as tf
 import numpy as np
-from tf.keras import Sequential
-from tf.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D
-from tf.keras.optimizers import SGD, Adam
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D
+from tensorflow.keras.optimizers import SGD, Adam
 from PIL import Image, ImageDraw
 
 def get_p_model():
