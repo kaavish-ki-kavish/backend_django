@@ -3,12 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 import cv2 as cv
-# import torch
-# import torch.nn.functional as F
-# import torchvision
-# from torchvision import datasets, transforms
-# from torch.utils import data
-# import torch.nn as nn
+import torch
+import torch.nn.functional as F
+import torchvision
+from torchvision import datasets, transforms
+from torch.utils import data
+import torch.nn as nn
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -37,9 +37,9 @@ class UrduCnnScorer:
     def __init__(self, x, y):
         file = open(os.path.join(__location__, 'urdu_model_state_dict_blur.pt'), 'rb')
         # Load
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cpu')
         if torch.cuda.is_available():
-            map_location = lambda storage, loc: storage.cuda()
+            map_location = 'cpu' #lambda storage, loc: storage.cuda()
         else:
             map_location = 'cpu'
 

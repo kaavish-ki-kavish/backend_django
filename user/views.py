@@ -21,17 +21,17 @@ from .utils import get_and_authenticate_user, create_user_account, create_child_
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
 from .feature_extractor import hbr_feature_extract, scale_strokes
-#from .urduCNN import UrduCnnScorer
+from .urduCNN import UrduCnnScorer
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 import cv2 as cv
-# import torch
-# import torch.nn.functional as F
-# import torchvision
-# from torchvision import datasets, transforms
-# from torch.utils import data
-# import torch.nn as nn
+import torch
+import torch.nn.functional as F
+import torchvision
+from torchvision import datasets, transforms
+from torch.utils import data
+import torch.nn as nn
 
 # from django.shortcuts import render
 # from .apps import PredictorConfig
@@ -223,9 +223,9 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         x = request.data.get('x', None)
         y = request.data.get('y', None)
-        #urdu_scorer = UrduCnnScorer(x, y)
-        #score = urdu_scorer.get_score()
-        score = 0.5
+        urdu_scorer = UrduCnnScorer(x, y)
+        score = urdu_scorer.get_score()
+        #score = 0.5
         response = {
             'message': 'Successful',
             'prediction': score,
