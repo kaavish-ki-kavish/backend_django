@@ -26,12 +26,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 import cv2 as cv
-import torch
-import torch.nn.functional as F
-import torchvision
-from torchvision import datasets, transforms
-from torch.utils import data
-import torch.nn as nn
+# import torch
+# import torch.nn.functional as F
+# import torchvision
+# from torchvision import datasets, transforms
+# from torch.utils import data
+# import torch.nn as nn
 
 # from django.shortcuts import render
 # from .apps import PredictorConfig
