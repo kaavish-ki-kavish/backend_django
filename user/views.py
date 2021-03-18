@@ -267,7 +267,10 @@ class AuthViewSet(viewsets.GenericViewSet):
                 'penup': list(penup)
             }
         
-            response = requests.post(url, json=tf_data)        
+            response = requests.post(url, json=tf_data)       
+            print(response)
+            print(type(response))
+            print(reponse.json)
             print(response.data, response.data.scores) 
             #p_features, s_features = get_feature_vector(char)
             a = 1 #feature_scorer(img, p_features,s_features, verbose= 1)
