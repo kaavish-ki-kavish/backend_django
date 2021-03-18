@@ -51,7 +51,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         'edit_child': serializers.EditChildSerializer,
         'generate_character': serializers.Characters,
         'session': serializers.HistorySerializer,
-        'get_score': serializers.DataEntrySerializer,
+        'get_score': serializers.DataEntrySerializerTf,
     }
     queryset = ''
 
@@ -217,10 +217,13 @@ class AuthViewSet(viewsets.GenericViewSet):
     @action(methods=['POST'], detail=False)
     def get_score(self, request):
 
+
         try:
-            data = request.json
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            data = serializer.validated_data
         except:
-            print(type(request), request)
+            print(type(request), request, request.data)
 
         img = np.array(data['img'])
         scores = []

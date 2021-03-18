@@ -144,3 +144,20 @@ class DataEntrySerializer(serializers.Serializer):
             child = serializers.ListField(
             child= serializers.IntegerField())))
     exercise = serializers.IntegerField()
+
+class DataEntrySerializerTf(serializers.Serializer):
+    char = serializers.CharField(max_length= 255, required= True)
+    img = serializers.ListField(
+        child=serializers.ListField(
+            child= serializers.IntegerField())
+    )
+    whole_x = serializers.ListField(
+                child= serializers.IntegerField()
+            )
+    whole_y = serializers.ListField(
+                child= serializers.IntegerField()
+            )
+    pen_up = serializers.ListField(
+                child= serializers.IntegerField()
+            )
+    exercise = serializers.IntegerField()
