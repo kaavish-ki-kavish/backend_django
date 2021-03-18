@@ -248,8 +248,6 @@ def crop_image(array):
 
     return img
 
-import torchvision
-from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 
 def feature_scorer(test_image, correct_p, correct_s, w_p = 0.7, w_s = 0.3, verbose = 0):

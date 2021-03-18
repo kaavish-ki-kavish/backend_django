@@ -21,17 +21,10 @@ from .utils import get_and_authenticate_user, create_user_account, create_child_
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
 from .feature_extractor import hbr_feature_extract, scale_strokes
-from .urduCNN import UrduCnnScorer
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 import cv2 as cv
-import torch
-import torch.nn.functional as F
-import torchvision
-from torchvision import datasets, transforms
-from torch.utils import data
-import torch.nn as nn
 
 # from django.shortcuts import render
 # from .apps import PredictorConfig
@@ -219,48 +212,29 @@ class AuthViewSet(viewsets.GenericViewSet):
     #         data=serializers.DrawingExerciseSerializer(DrawingExercise.objects.all(), many=True).data,
     #         status=status.HTTP_204_NO_CONTENT)
 
-    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    def get_urdu_score(self, request):
 
-        x = request.data.get('x', None)
-        y = request.data.get('y', None)
-        urdu_scorer = UrduCnnScorer(x, y)
-        score = urdu_scorer.get_score()
-        response = {
-            'message': 'Successful',
-            'prediction': score,
-        }
-        return Response(response)
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def get_score(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
+        data = request.json
+        img = np.array(data['img'])
         scores = []
-        whole_x, whole_y, penup = get_whole_stroke(data['data'])
-        char = data['char']
-
-
 
         if data['exercise'] == 0: #drawing
-            #do smth
             pass
+
         elif data['exercise'] == 1: #urdu letters
-            scorer = UrduCnnScorer(whole_x, whole_y, penup)
-            label = scorer.NUM2LABEL.index(char)
-            img = scorer.preprocessing()
-            print(img.shape)
-            scores.append(scorer.test_img(img)[0, label])
+            char = data['char']
+            whole_x = data['whole_x']
+            whole_y = data['whole_y']
+            penup = data['penup']
 
             p_features, s_features = get_feature_vector(char)
             scores.append(feature_scorer(img, p_features,s_features, verbose= 1))
             scores.append(perfect_scorer(whole_x, whole_y, penup, char))
 
-        print(scores)
         response = {
-            'message': 'Successful',
-            'prediction': np.mean(scores),
+            'scores': scores,
         }
 
         return Response(response)
