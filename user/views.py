@@ -222,27 +222,28 @@ class AuthViewSet(viewsets.GenericViewSet):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             data = serializer.validated_data
+            
+            img = np.array(data['img'])
+            scores = []
+
+            if data['exercise'] == 0:  # drawing
+                pass
+
+            elif data['exercise'] == 1:  # urdu letters
+                char = data['char']
+                whole_x = data['whole_x']
+                whole_y = data['whole_y']
+                penup = data['penup']
+
+                p_features, s_features = get_feature_vector(char)
+                scores.append(feature_scorer(img, p_features, s_features, verbose=1))
+                scores.append(perfect_scorer(whole_x, whole_y, penup, char))
+
+            response = {
+                'scores': scores,
+            }
+
+            return Response(response)
         except:
             print(type(request), request, request.data)
 
-        img = np.array(data['img'])
-        scores = []
-
-        if data['exercise'] == 0: #drawing
-            pass
-
-        elif data['exercise'] == 1: #urdu letters
-            char = data['char']
-            whole_x = data['whole_x']
-            whole_y = data['whole_y']
-            penup = data['penup']
-
-            p_features, s_features = get_feature_vector(char)
-            scores.append(feature_scorer(img, p_features,s_features, verbose= 1))
-            scores.append(perfect_scorer(whole_x, whole_y, penup, char))
-
-        response = {
-            'scores': scores,
-        }
-
-        return Response(response)
