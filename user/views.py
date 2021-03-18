@@ -214,7 +214,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
 
 
-    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    @action(methods=['POST'], detail=False)
     def get_score(self, request):
         data = request.json
         img = np.array(data['img'])
