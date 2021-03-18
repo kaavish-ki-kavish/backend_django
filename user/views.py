@@ -222,7 +222,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             data = serializer.validated_data
-            
+
             img = np.array(data['img'])
             scores = []
 
@@ -233,7 +233,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                 char = data['char']
                 whole_x = data['whole_x']
                 whole_y = data['whole_y']
-                penup = data['penup']
+                penup = data['pen_up']
 
                 p_features, s_features = get_feature_vector(char)
                 scores.append(feature_scorer(img, p_features, s_features, verbose=1))
