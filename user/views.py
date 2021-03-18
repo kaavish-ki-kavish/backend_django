@@ -275,8 +275,8 @@ class AuthViewSet(viewsets.GenericViewSet):
             print(response.json()['scores']) 
             sys.stdout.flush()
             #p_features, s_features = get_feature_vector(char)
-            a = response.json()['scores'])[0]#feature_scorer(img, p_features,s_features, verbose= 1)
-            b = response.json()['scores'])[1] #perfect_scorer(whole_x, whole_y, penup, char)
+            a = response.json()['scores'][0]#feature_scorer(img, p_features,s_features, verbose= 1)
+            b = response.json()['scores'][1] #perfect_scorer(whole_x, whole_y, penup, char)
             scores.append(a)
             scores.append(b)
 
