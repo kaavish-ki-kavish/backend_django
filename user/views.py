@@ -16,7 +16,7 @@ from .models import ChildProfile, Characters, Session, History, ObjectWord, Colo
 from rest_framework.response import Response
 from . import serializers
 from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
-    edit_child_profile
+    edit_child_profile, get_whole_stroke, get_feature_vector, feature_scorer, perfect_scorer
 
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
@@ -57,7 +57,8 @@ class AuthViewSet(viewsets.GenericViewSet):
         'get_most_recent_child': serializers.ChildRegisterSerializer,
         'edit_child': serializers.EditChildSerializer,
         'generate_character': serializers.Characters,
-        'session': serializers.HistorySerializer
+        'session': serializers.HistorySerializer,
+        'get_score': serializers.DataEntrySerializer,
     }
     queryset = ''
 
@@ -231,4 +232,40 @@ class AuthViewSet(viewsets.GenericViewSet):
         }
         return Response(response)
 
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def get_score(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        scores = []
+        whole_x, whole_y, penup = get_whole_stroke(data['data'])
+        char = data['char']
 
+
+
+        if data['exercise'] == 0: #drawing
+            #do smth
+            pass
+        elif data['exercise'] == 1: #urdu letters
+            scorer = UrduCnnScorer(whole_x, whole_y, penup)
+            label = scorer.NUM2LABEL.index(char)
+            img = scorer.preprocessing()
+            print(img.shape)
+            scores.append(scorer.test_img(img)[0, label])
+
+            p_features, s_features = get_feature_vector(char)
+            scores.append(feature_scorer(img, p_features,s_features, verbose= 1))
+            scores.append(perfect_scorer(whole_x, whole_y, penup, char))
+
+
+
+
+
+            pass
+        print(scores)
+        response = {
+            'message': 'Successful',
+            'prediction': np.mean(scores),
+        }
+
+        return Response(response)
