@@ -220,9 +220,11 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         try:
             serializer = self.get_serializer(data=request.data)
+            print('here0')
             serializer.is_valid(raise_exception=True)
+            print('here1')
             data = serializer.validated_data
-
+            print('here2')
             img = np.array(data['img'])
             scores = []
 
