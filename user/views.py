@@ -29,6 +29,7 @@ import cv2 as cv
 import torch
 import torch.nn.functional as F
 import torchvision
+import sys
 from torchvision import datasets, transforms
 from torch.utils import data
 import torch.nn as nn
@@ -271,7 +272,9 @@ class AuthViewSet(viewsets.GenericViewSet):
             print(response)
             print(type(response))
             print(response.json)
-            print(response['scores'], reponse.json['scores']) 
+            sys.stdout.flush()
+            print(reponse.json['scores']) 
+            sys.stdout.flush()
             #p_features, s_features = get_feature_vector(char)
             a = 1 #feature_scorer(img, p_features,s_features, verbose= 1)
             b = 1 #perfect_scorer(whole_x, whole_y, penup, char)
