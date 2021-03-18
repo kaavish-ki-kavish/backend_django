@@ -69,9 +69,9 @@ class UrduCnnScorer:
         draw = ImageDraw.Draw(im)
         draw.line(x_y)
         img_array = np.array(im)
-        plt.imshow(img_array[:, :, 0])
-        plt.axis('off')
-        plt.show()
+        # plt.imshow(img_array[:, :, 0])
+        # plt.axis('off')
+        # plt.show()
         return img_array[:, :, 0]
 
     def crop_image(self, array):

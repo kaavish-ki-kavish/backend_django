@@ -54,8 +54,8 @@ class Characters(models.Model):
     sound_path = models.CharField(max_length = 255, null = True)
     sequence_id = models.IntegerField(null = True)
 
-    def __str__(self):
-        return f'{self.character_id} - level {self.level} - stroke at {self.ref_stroke_path}'
+    # def __str__(self):
+    #     return f'{self.character_id} - level {self.level} - stroke at {self.ref_stroke_path}'
 
 
 class ObjectWord(models.Model):

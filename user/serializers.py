@@ -116,7 +116,7 @@ class HistorySerializer(serializers.ModelSerializer):
 class CharactersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Characters
-        fields = ('character_id', 'level''ref_stroke_path', 'ref_object_path', 'label', 'sound_path', 'sequence_id')
+        fields = ('character_id', 'level', 'ref_stroke_path', 'ref_object_path', 'label', 'sound_path', 'sequence_id')
 
 
 class ObjectWordSerializer(serializers.ModelSerializer):
