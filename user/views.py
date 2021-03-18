@@ -225,7 +225,8 @@ class AuthViewSet(viewsets.GenericViewSet):
         y = request.data.get('y', None)
         urdu_scorer = UrduCnnScorer(x, y)
         score = urdu_scorer.get_score()
-        #score = 0.5
+        for _ in range(100):
+            print(score)
         response = {
             'message': 'Successful',
             'prediction': score,

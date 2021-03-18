@@ -13,6 +13,8 @@ import torch.nn as nn
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 class Urdu_CNN(nn.Module):
     def __init__(self):
@@ -69,9 +71,9 @@ class UrduCnnScorer:
         draw = ImageDraw.Draw(im)
         draw.line(x_y)
         img_array = np.array(im)
-        # plt.imshow(img_array[:, :, 0])
-        # plt.axis('off')
-        # plt.show()
+        plt.imshow(img_array[:, :, 0])
+        plt.axis('off')
+        plt.show()
         return img_array[:, :, 0]
 
     def crop_image(self, array):
@@ -186,14 +188,8 @@ class UrduCnnScorer:
 
 # x = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
 # y = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-#
+# #
 # urdu_scorer = UrduCnnScorer(x, y)
-# #urdu_scorer.preprocessing()
 # score = urdu_scorer.get_score()
 # print(score)
-#
-# x = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
-# y = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-# #
-#
-# print(score)
+
