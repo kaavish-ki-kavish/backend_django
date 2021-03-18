@@ -257,11 +257,6 @@ class AuthViewSet(viewsets.GenericViewSet):
             scores.append(feature_scorer(img, p_features,s_features, verbose= 1))
             scores.append(perfect_scorer(whole_x, whole_y, penup, char))
 
-
-
-
-
-            pass
         print(scores)
         response = {
             'message': 'Successful',
