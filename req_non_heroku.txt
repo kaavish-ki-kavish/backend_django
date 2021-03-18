@@ -1,3 +1,6 @@
+dj-database-url
+psycopg2
+tensorflow-cpu
 gunicorn
 django-heroku
 pyGithub
