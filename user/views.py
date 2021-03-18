@@ -273,7 +273,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             print(type(response))
             print(response.json)
             sys.stdout.flush()
-            print(reponse.json['scores']) 
+            print(response.json['scores']) 
             sys.stdout.flush()
             #p_features, s_features = get_feature_vector(char)
             a = 1 #feature_scorer(img, p_features,s_features, verbose= 1)
