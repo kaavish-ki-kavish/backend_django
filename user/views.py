@@ -265,7 +265,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                 'img': img.tolist(), 
                 'whole_x' : whole_x, 
                 'whole_y': whole_y, 
-                'penup': list(penup)
+                'pen_up': list(penup)
             }
         
             response = requests.post(url, json=tf_data)       
