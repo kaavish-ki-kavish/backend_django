@@ -236,7 +236,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         }
         return Response(response)
     
-    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    @action(methods=['POST'], detail=False)
     def get_score(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
