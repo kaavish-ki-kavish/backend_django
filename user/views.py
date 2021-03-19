@@ -12,11 +12,12 @@ from django.db.models import Max, Min
 import os, datetime, random, copy
 
 from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise
+from .feature_extractor import  get_mahalanobis_distance
 
 from rest_framework.response import Response
 from . import serializers
 from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
-    edit_child_profile, get_whole_stroke, get_feature_vector, feature_scorer, perfect_scorer
+    edit_child_profile, get_whole_stroke, get_feature_vector, feature_scorer, perfect_scorer, get_drawing_score_cnn
 
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
@@ -223,15 +224,24 @@ class AuthViewSet(viewsets.GenericViewSet):
         img = np.array(data['img'])
         img = img.astype(np.uint8)
         scores = []
+        char = data['char']
+        whole_x = data['whole_x']
+        whole_y = data['whole_y']
+        penup = data['pen_up']
+        msg = 'Successful'
 
-        if data['exercise'] == 0:  # drawing
-            pass
+        if data['exercise'] == 0: #drawing
+            categories = ['circle', 'triangle', 'bird', 'square', 'axe', 'airplane', 'apple', 'banana', 'arm', 'car']
+            if char in categories:
+                label = categories.index(char)
+                scores.append(get_mahalanobis_distance(whole_x, whole_y, penup, label))
+                scores.append(get_drawing_score_cnn(whole_x, whole_y, penup, label))
+                print(scores)
+
+            else:
+                scores = [-1]
 
         elif data['exercise'] == 1:  # urdu letters
-            char = data['char']
-            whole_x = data['whole_x']
-            whole_y = data['whole_y']
-            penup = data['pen_up']
             print('here0')
             p_features, s_features = get_feature_vector(char)
             print('here1')
