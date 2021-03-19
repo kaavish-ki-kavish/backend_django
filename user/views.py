@@ -221,6 +221,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         img = np.array(data['img'])
+        img = img.astype(np.uint8)
         scores = []
 
         if data['exercise'] == 0:  # drawing
