@@ -12,11 +12,12 @@ from django.db.models import Max, Min
 import os, datetime, random, copy
 
 from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise
+from .feature_extractor import  get_mahalanobis_distance
 
 from rest_framework.response import Response
 from . import serializers
 from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
-    edit_child_profile, get_whole_stroke, get_feature_vector, feature_scorer, perfect_scorer
+    edit_child_profile, get_whole_stroke, get_feature_vector, feature_scorer, perfect_scorer, get_drawing_score_cnn
 
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
@@ -241,23 +242,31 @@ class AuthViewSet(viewsets.GenericViewSet):
         whole_x, whole_y, penup = get_whole_stroke(data['data'])
         char = data['char']
 
-
+        msg = 'Successful'
 
         if data['exercise'] == 0: #drawing
-            #do smth
-            pass
+            categories = ['circle', 'triangle', 'bird', 'square', 'axe', 'airplane', 'apple', 'banana', 'arm', 'car']
+            if char in categories:
+                label = categories.index(char)
+                scores.append(get_mahalanobis_distance(whole_x, whole_y, penup, label))
+                scores.append(get_drawing_score_cnn(whole_x, whole_y, penup, label))
+                print(scores)
+
+            else:
+                msg = "Char not in categories bruh"
+                scores = [0]
+
         elif data['exercise'] == 1: #urdu letters
             scorer = UrduCnnScorer(whole_x, whole_y, penup)
             label = scorer.NUM2LABEL.index(char)
             img = scorer.preprocessing()
-            print(img.shape)
+
             scores.append(scorer.test_img(img)[0, label])
 
             p_features, s_features = get_feature_vector(char)
             scores.append(feature_scorer(img, p_features,s_features, verbose= 1))
             scores.append(perfect_scorer(whole_x, whole_y, penup, char))
 
-        print(scores)
         response = {
             'message': 'Successful',
             'prediction': np.mean(scores),

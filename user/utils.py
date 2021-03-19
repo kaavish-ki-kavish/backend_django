@@ -360,6 +360,35 @@ def get_perfect_model():
     model.load_weights(perf_model)
     return model
 
+def make_image(x, y, penup):
+    x_0, y_0 = min(x), min(y)
+    x_n, y_n = max(x), max(y)
+    w = x_n - x_0 + 1
+    h = y_n - y_0 + 1
+    padding = 10
+    x_origin = [x_cord + padding // 2 - x_0 for x_cord in x]
+    y_origin = [y_cord + padding // 2 - y_0 for y_cord in y]
+    im = Image.new('RGB', (w + padding, h + padding), (0, 0, 0))
+    draw = ImageDraw.Draw(im)
+
+    x_y = []
+    for i in range(len(x_origin) - 1):
+        if (i + 1) not in penup:
+            x_y.append((x_origin[i], y_origin[i]))
+        else:
+            draw.line(x_y, fill=(255, 255, 255), width=7)
+            x_y = []
+
+    draw.line(x_y, fill=(255, 255, 255), width=7)
+
+    im = np.array(im)
+    im =  cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    ret, thresh1 = cv2.threshold(im, 127, 255, cv2.THRESH_BINARY_INV)
+    plt.imsave('perfect_image_drawing.png', thresh1)
+    return thresh1
+
+
+
 def perfect_scorer(x, y, penup, char):
     labels = ['jeem', 'gaaf', 'zwad', 'kaaf', 'laam', 'hay', 'seen', 'sheen', 'swad', 'khay', 'chay', 'say', 'alif', 'baa', 'tay', 'noon', 'pay']
     x_0, y_0 = min(x), min(y)
@@ -442,3 +471,32 @@ def perfect_scorer(x, y, penup, char):
     pred_labels = model.predict(img)[0]
 
     return pred_labels[labels.index(char)]
+
+from tensorflow.keras.layers import Conv2D, MaxPooling2D
+
+def drawing_cnn_model():
+    # create model
+    num_classes = 34
+    model = Sequential()
+    model.add(Conv2D(30, (5, 5), input_shape=(28, 28, 1), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(15, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.2))
+    model.add(Flatten())
+    model.add(Dense(128, activation='relu'))
+    model.add(Dense(50, activation='relu'))
+    model.add(Dense(num_classes, activation='softmax'))
+    # Compile model
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return model
+
+def get_drawing_score_cnn(x,y, penup, label):
+    img = make_image(x, y, penup)
+    img = cv2.resize(img, (28, 28), cv2.INTER_AREA)
+    img = np.reshape(img, (1, 28, 28, 1))
+    model_cnn = drawing_cnn_model()
+    model_cnn.load_weights(os.path.join(__location__, 'drawing_model'))
+    pred = model_cnn.predict(img)[0]
+    print(pred)
+    return pred[label]
