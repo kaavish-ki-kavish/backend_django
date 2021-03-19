@@ -253,7 +253,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             tf_data = {
                 'exercise': 0,
                 'char': char,
-                'img': [0],
+                'img': [[0, 0]],
                 'whole_x': whole_x,
                 'whole_y': whole_y,
                 'pen_up': list(penup)
