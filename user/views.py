@@ -247,11 +247,30 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         url = 'http://aangantf.herokuapp.com/api/auth/get_score'
         
-        
+        msg = 'Successful'
         
         if data['exercise'] == 0: #drawing
-            #do smth
-            pass
+            tf_data = {
+                'exercise': 0,
+                'char': char,
+                'img': [0],
+                'whole_x': whole_x,
+                'whole_y': whole_y,
+                'pen_up': list(penup)
+            }
+            response = requests.post(url, json=tf_data)
+            print(response)
+            print(type(response))
+            sys.stdout.flush()
+            print(response.json()['scores'])
+            sys.stdout.flush()
+            a = response.json()['scores'][0]#feature_scorer(img, p_features,s_features, verbose= 1)
+            b = response.json()['scores'][1] #perfect_scorer(whole_x, whole_y, penup, char)
+            scores.append(a)
+            scores.append(b)
+
+
+
         elif data['exercise'] == 1: #urdu letters
             scorer = UrduCnnScorer(whole_x, whole_y, penup)
             label = scorer.NUM2LABEL.index(char)
@@ -282,7 +301,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         print(scores)
         response = {
-            'message': 'Successful',
+            'message': msg,
             'prediction': np.mean(scores),
         }
 
