@@ -196,3 +196,56 @@ class UrduCnnScorer:
 # #
 #
 # print(score)
+
+
+# features = ['startUpDownVertical', 'endVerticalDown', 'endVerticalUp', 'longHorR2L', 'longHorL2R', 'alif']
+# features += ['semiCircleR2L', 'semiCircleU2D', 'endSemiCircle', 'startAien', 'endHay']
+# features += ['endChotiYay']
+# features += ['startLoopUp', 'middleLoopUp', 'startLoopDown', 'middleLoopDown', 'startSwaad', 'goolHay', 'chashmiHay', 'midAien']
+# features += ['sharpEdge', 'upIntersection', 'downIntersection', 'seen', 'endGolHay']
+# features += ['jeem', 'ray', 'daal']
+# print(len(features))
+#
+# cluster_features = {}
+# cluster_features['alif'] = ['startUpDownVertical', 'endVerticalDown', 'alif']
+# cluster_features['bey'] = [ 'startUpDownVertical','endVerticalUp', 'longHorR2L']
+# cluster_features['jeem'] = ['longHorL2R', 'semiCircleU2D', 'jeem']
+# cluster_features['daal'] = ['daal']
+# cluster_features['ray'] = ['ray', 'startUpDownVertical', 'sharpEdge']
+# cluster_features['seen'] = ['endSemiCircle', 'sharpEdge', 'seen']
+# cluster_features['swad'] = ['endSemiCircle', 'startSwaad']
+# cluster_features['twa'] = ['startUpDownVertical', 'downIntersection']
+# cluster_features['ayn'] = ['startAien', 'semiCircleU2D']
+# cluster_features['faa'] = ['longHorL2R', 'startLoopUp', 'endVerticalUp']
+# cluster_features['qaaf'] = ['startLoopUp', 'endSemiCircle']
+# cluster_features['kaaf'] = ['startUpDownVertical', 'longHorR2L', 'endVerticalUp']
+# cluster_features['laam'] = ['startUpDownVertical', 'semiCircleR2L']
+# cluster_features['noon'] = ['semiCircleR2L']
+# cluster_features['meem'] = ['endVerticalDown', 'startLoopDown']
+# cluster_features['waw'] = ['startLoopUp']
+# cluster_features['gool-hay'] = ['goolHay']
+# cluster_features['chashmi-ha'] = ['chashmiHay']
+# cluster_features['choti-yay'] = ['endChotiYay', 'endSemiCircle']
+# cluster_features['bari-yay'] = ['longHorL2R']
+#
+# clusters = {}
+# clusters['alif'] = ['alif']
+# clusters['bey'] = ['ttaa', 'paa', 'seey', 'baa', 'taa']
+# clusters['jeem'] = ['khaa', 'jeem', 'haa1', 'cheey']
+# clusters['daal'] = ['daal', 'zaal', 'dhaal']
+# clusters['ray'] = ['rhraa', 'raa', 'zhaa', 'zaaa']
+# clusters['seen'] = ['seen', 'sheen']
+# clusters['swad'] = ['zwaad', 'swaad']
+# clusters['twa'] = ['twa', 'zwaa', 'Twaa']
+# clusters['ayn'] = ['ayn', 'ghain']
+# clusters['faa'] = ['faa']
+# clusters['qaaf'] = ['qaaf']
+# clusters['kaaf'] = ['gaaf', 'kaaf']
+# clusters['laam'] = ['laam']
+# clusters['meem'] = ['meem']
+# clusters['noon'] = ['noon', 'noonghunna']
+# clusters['waw'] = ['waw']
+# clusters['gool-hay'] = ['haa3']
+# clusters['chashmi-ha'] = ['haa2']
+# clusters['choti-yay'] = ['choti-yaa']
+# clusters['bari-yay'] = ['bari-yaa']

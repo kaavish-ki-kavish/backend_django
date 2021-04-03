@@ -206,33 +206,75 @@ class AuthViewSet(viewsets.GenericViewSet):
             status=status.HTTP_204_NO_CONTENT
         )
 
-    ## THIS FUNCTION WAS ONLY FOR ME TO TOO AND SEE  DATA SO PLEASE DON'T USE IT
+    #THIS FUNCTION WAS ONLY FOR ME TO TOO AND SEE  DATA SO PLEASE DON'T USE IT
     # @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     # def insert_data(self, request):
-
-    # ch = Characters(
-    #     character_id=1, level=1, ref_stroke_path='/strokes/' + 'stroke' + '.txt',
-    #     ref_object_path='/strokes/' + 'stroke' + '.txt',
-    #     label='alif', sound_path='/strokes/' + 'stroke' + '.txt', sequence_id=1)
-    # ch.save()
-
-    # return Response(
-    #     data=serializers.CharactersSerializer(Characters.objects.all(),
-    #                                                many=True).data,
-    #     status=status.HTTP_204_NO_CONTENT
-    # )
-
-    # a = ChildProfile.objects.get(profile_id=1)
-    # s = Session(session_id=1, profile_id=1, time_start=datetime.datetime.now(), time_end=datetime.datetime.now(),
-    #             token=1)
-    # s.save()
-
-    # ch = Characters(
-    #     character_id=1, level=1, ref_stroke_path='/strokes/' + 'stroke' + '.txt',
-    #     ref_object_path='/strokes/' + 'stroke' + '.txt',
-    #     label='alif', sound_path='/strokes/' + 'stroke' + '.txt', sequence_id=1)
-    # ch.save()
+    #     from django.utils import timezone
+    #     words = ['alif', 'ttaa', 'paa', 'seey', 'baa', 'taa', 'daal', 'zaal', 'dhaal', 'seen', 'sheen', 'zwaad',
+    #              'swaad']
+    #     i = 3
+    #     ch = Characters(
+    #         character_id=32,
+    #         level=1,
+    #         ref_stroke_path='/strokes/' + words[i] + '.txt',
+    #         ref_object_path='/strokes/' + words[i] + '.txt',
+    #         label=words[i],
+    #         sound_path='/strokes/' + words[i] + '.txt',
+    #         sequence_id=i)
+    #     ch.save()
+    #     return Response(
+    #         data=serializers.CharactersSerializer(
+    #             Characters.objects.filter(character_id=32), many=True).data,
+    #         status=status.HTTP_204_NO_CONTENT
+    #     )
+    #     for i in range(1,10):
+    #         His = History(session_id=Session.objects.get(session_id=i),
+    #                       stroke_score=random.random(),
+    #                       stroke_path='/strokes/' + words[i] + '.txt',
+    #                       time_taken=random.randint(1, 100),
+    #                       datetime_attempt=timezone.now(),
+    #                       similarity_score=random.random(),
+    #                       character_id=Characters.objects.filter(character_id=i).latest('character_id'),
+    #                       coloring_id=ColoringExercise.objects.get(coloring_id=1),
+    #                       object_id=ObjectWord.objects.get(object_id=1),
+    #                       is_completed=True,
+    #                       drawing_id=DrawingExercise.objects.get(drawing_id=70 + i)
+    #                       )
+    #         His.save()
     #
+    #     return Response(
+    #         data=serializers.HistorySerializer(History.objects.all(),
+    #                                               many=True).data,
+    #         status=status.HTTP_204_NO_CONTENT
+    #     )
+
+    # from django.utils import timezone
+    # import string
+    # for i in range(10):
+    #     print(i)
+    #     s = Session(
+    #         session_id=i,
+    #         profile_id=ChildProfile.objects.get(profile_id=1),
+    #         time_start=timezone.now(),
+    #         time_end=timezone.now() + datetime.timedelta(seconds=random.randint(0, 86400)),
+    #         token=''.join(random.choices(string.ascii_lowercase, k=5))
+    #     )
+    #     s.save()
+    #
+
+    # for i in range(2, 10):
+    #     ch = Characters(
+    #         character_id=i,
+    #         level=1,
+    #         ref_stroke_path='/strokes/' + words[i] + '.txt',
+    #         ref_object_path='/strokes/' + words[i] + '.txt',
+    #         label=words[i],
+    #         sound_path='/strokes/' + words[i] + '.txt',
+    #         sequence_id=i)
+    #     ch.save()
+
+
+
     # o = ObjectWord(object_id=1, label='kursi', image_path='/strokes/' + 'stroke' + '.txt', is_object=True,
     #                ref_image_path='/strokes/' + 'stroke' + '.txt', category='animal',
     #                sound_path='/strokes/' + 'stroke' + '.txt')
@@ -243,19 +285,7 @@ class AuthViewSet(viewsets.GenericViewSet):
     #     sound_path='/strokes/' + 'stroke' + '.txt', label='ball')
     # co.save()
     #
-    # His = History(session_id=Session.objects.get(session_id=1),
-    #               stroke_score=random.random(),
-    #               stroke_path='/strokes/' + 'stroke' + '.txt',
-    #               time_taken=random.randint(1, 100),
-    #               datetime_attempt=datetime.datetime.now(),
-    #               similarity_score=random.random(),
-    #               character_id=Characters.objects.filter(character_id=1).latest('character_id'),
-    #               coloring_id=ColoringExercise.objects.get(coloring_id=1),
-    #               object_id=ObjectWord.objects.get(object_id=1),
-    #               is_completed=True,
-    #               drawing_id=DrawingExercise.objects.get(drawing_id=70)
-    #               )
-    # His.save()
+
     #
     #
     # return Response(
@@ -284,15 +314,23 @@ class AuthViewSet(viewsets.GenericViewSet):
             status=status.HTTP_204_NO_CONTENT
         )
 
-    # @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    # def generate_character_exercise(self, request):
-    #     profile_id_stroke = request.data.get('profile_id', None)
-    #     profile_session_id = Session.objects.values_list('session_id', flat=True).get(profile_id=profile_id_stroke)
-    #     profile_session_character_id = History.objects.values_list('character_id', flat=True).filter(
-    #         session_id=profile_session_id).latest('attempt_id')
-    #     # next exercise will be +1 of on which I am rn
-    #     return Response(
-    #         data=serializers.CharactersSerializer(
-    #             DrawingExercise.objects.filter(drawing_id=(profile_session_character_id + 1)), many=True).data,
-    #         status=status.HTTP_204_NO_CONTENT
-    #     )
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def generate_character_exercise(self, request):
+
+        # child profile_id to session session_id to History character_id to Character sequence_id
+
+        profile_id_stroke = request.data.get('profile_id', None)
+        profile_session_id = Session.objects.values_list('session_id', flat=True).filter(
+            profile_id=profile_id_stroke).latest('session_id')
+        profile_session_character_id = History.objects.values_list('character_id', flat=True).get(
+            session_id=profile_session_id)
+
+        character_sequence_id = Characters.objects.values_list('sequence_id', flat=True).filter(
+            character_id=profile_session_character_id).latest('sequence_id')
+
+        return Response(
+            data=serializers.CharactersSerializer(
+                Characters.objects.filter(sequence_id=character_sequence_id+1)[:1], many=True).data,
+            status=status.HTTP_204_NO_CONTENT
+        )
+
