@@ -2,7 +2,8 @@ from django.contrib.auth import get_user_model, password_validation
 from rest_framework.authtoken.models import Token
 from rest_framework import serializers
 from django.contrib.auth.models import BaseUserManager
-from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise
+from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
+    ClusterCharacter, ClusterFeature, Features
 
 User = get_user_model()
 
@@ -135,3 +136,39 @@ class ColoringExerciseSerializer(serializers.ModelSerializer):
     class Meta:
         model = ColoringExercise
         fields = ('coloring_id', 'ref_image_path', 'level', 'sound_path', 'label')
+
+
+class ClustersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Clusters
+        fields = ('cluster_id', 'cluster_name')
+
+class ClustersCharacterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClusterCharacter
+        fields = ('cluster_character_id', 'cluster_id', 'character_id')
+
+class FeaturesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Features
+        fields = ('feature_id', 'feature_name')
+
+
+class ClusterFeatureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClusterFeature
+        fields = ('cluster_feature_id', 'cluster_id', 'feature_id')
+
+# class HistSessionSerializer(serializers.Serializer):
+#     session_id = serializers.IntegerField()
+#     time_start = serializers.DateTimeField()
+#     time_end = serializers.DateTimeField()
+#     token = serializers.CharField(max_length=255)
+#
+#     attempt_id = serializers.IntegerField()
+#     stroke_path = serializers.CharField(max_length=255)
+#     time_taken = serializers.IntegerField()
+#     stroke_score = serializers.FloatField()
+#     similarity_score = serializers.FloatField()
+#     datetime_attempt = serializers.DateTimeField()
+#     is_completed = serializers.BooleanField()
