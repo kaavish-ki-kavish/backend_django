@@ -15,7 +15,8 @@ from django.db.models import Count
 from django.db.models import Max, Min
 import os, datetime, random, copy
 
-from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise
+from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
+    ClusterFeature, Features, AttemptFeatures
 
 from rest_framework.response import Response
 from . import serializers
@@ -348,17 +349,41 @@ class AuthViewSet(viewsets.GenericViewSet):
         # child profile_id to session session_id to History character_id to Character sequence_id
 
         profile_id_stroke = request.data.get('profile_id', None)
+        is_seq = request.data.get('is_seq', None)
         profile_session_id = Session.objects.values_list('session_id', flat=True).filter(
             profile_id=profile_id_stroke).latest('session_id')
         profile_session_character_id = History.objects.values_list('character_id', flat=True).filter(
             session_id=profile_session_id).latest('character_id')
 
-        character_sequence_id = Characters.objects.values_list('sequence_id', flat=True).filter(
-            character_id=profile_session_character_id).latest('sequence_id')
+        if is_seq == 1:
+            character_sequence_id = Characters.objects.values_list('sequence_id', flat=True).filter(
+                character_id=profile_session_character_id).latest('sequence_id')
+
+            return Response(
+                data=serializers.CharactersSerializer(
+                    Characters.objects.filter(sequence_id=character_sequence_id + 1)[:1], many=True).data,
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+        character_cluster_id = Characters.objects.values_list('cluster_id', flat=True).filter(
+            character_id=profile_session_character_id).latest('cluster_id')
+
+        cluster_feature_id = ClusterFeature.objects.filter(cluster_id=character_cluster_id).values_list('feature_id',
+                                                                                                        flat=True)
+        feature_name_lst = []
+        for i in cluster_feature_id:
+            feature_name_lst.append(
+                list(Features.objects.filter(feature_id=i).values_list('feature_name', flat=True))[0])
+
+        history_attempt_id = History.objects.values_list('attempt_id', flat=True).filter(session_id=profile_session_id).latest('attempt_id')
+        print(history_attempt_id)
+        print(cluster_feature_id)
+        #AttemptFeatures.objects.filter(attempt_id= history_attempt_id)
+
 
         return Response(
-            data=serializers.CharactersSerializer(
-                Characters.objects.filter(sequence_id=character_sequence_id + 1)[:1], many=True).data,
+            data=serializers.FeaturesSerializer(
+                Features.objects.filter(feature_id=1), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
 
@@ -671,5 +696,16 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'exercise_review': lst_drawing_ex},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
+    def check(self, request):
+        words = ['alif', 'bay', 'jeem']
+        cluster_id_lst = [1, 2, 3]
+        AttemptFeatures.objects.create(attempt_id=51, score= random.random(0,1), feature_id=)
+        return Response(
+            data=serializers.CharactersSerializer(
+                Characters.objects.filter(character_id=32), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )

@@ -45,6 +45,9 @@ class Session(models.Model):
     def __str__(self):
         return f'{self.session_id} - by {self.profile_id} - on {self.time_start}'
 
+class Clusters(models.Model):
+    cluster_id = models.AutoField(primary_key=True)
+    cluster_name = models.CharField(max_length=255, null=False)
 
 class Characters(models.Model):
     character_id = models.IntegerField(null=False, blank=False)
@@ -54,6 +57,7 @@ class Characters(models.Model):
     label = models.CharField(max_length=255, null=False)
     sound_path = models.CharField(max_length=255, null=True)
     sequence_id = models.IntegerField(null=True)
+    cluster_id = models.ForeignKey(Clusters, on_delete=models.CASCADE, null=True)
 
     # def __str__(self):
     #     return f'{self.character_id} - level {self.level} - stroke at {self.ref_stroke_path}'
@@ -101,16 +105,6 @@ class History(models.Model):
     is_completed = models.BooleanField()
 
 
-class Clusters(models.Model):
-    cluster_id = models.AutoField(primary_key=True)
-    cluster_name = models.CharField(max_length=255, null=False)
-
-
-class ClusterCharacter(models.Model):
-    cluster_character_id = models.AutoField(primary_key=True)
-    cluster_id = models.ForeignKey(Clusters, on_delete=models.CASCADE)
-    character_id = models.ForeignKey(Characters, on_delete=models.PROTECT)
-
 
 class Features(models.Model):
     feature_id = models.AutoField(primary_key=True)
@@ -122,3 +116,8 @@ class ClusterFeature(models.Model):
     feature_id = models.ForeignKey(Features, on_delete=models.CASCADE)
     cluster_id = models.ForeignKey(Clusters, on_delete=models.CASCADE)
 
+class AttemptFeatures(models.Model):
+    attempt_feature_id = models.AutoField(primary_key=True)
+    feature_id = models.ForeignKey(Features, on_delete=models.CASCADE)
+    attempt_id = models.ForeignKey(History, on_delete=models.CASCADE)
+    score = models.IntegerField(null=False)

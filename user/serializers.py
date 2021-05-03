@@ -3,7 +3,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import serializers
 from django.contrib.auth.models import BaseUserManager
 from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
-    ClusterCharacter, ClusterFeature, Features
+     ClusterFeature, Features
 
 User = get_user_model()
 
@@ -117,7 +117,7 @@ class HistorySerializer(serializers.ModelSerializer):
 class CharactersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Characters
-        fields = ('character_id', 'level', 'ref_stroke_path', 'ref_object_path', 'label', 'sound_path', 'sequence_id')
+        fields = ('character_id', 'level', 'ref_stroke_path', 'ref_object_path', 'label', 'sound_path', 'sequence_id','cluster_id')
 
 
 class ObjectWordSerializer(serializers.ModelSerializer):
@@ -143,10 +143,10 @@ class ClustersSerializer(serializers.ModelSerializer):
         model = Clusters
         fields = ('cluster_id', 'cluster_name')
 
-class ClustersCharacterSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ClusterCharacter
-        fields = ('cluster_character_id', 'cluster_id', 'character_id')
+# class ClustersCharacterSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ClusterCharacter
+#         fields = ('cluster_character_id', 'cluster_id', 'character_id')
 
 class FeaturesSerializer(serializers.ModelSerializer):
     class Meta:
