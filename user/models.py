@@ -120,4 +120,4 @@ class AttemptFeatures(models.Model):
     attempt_feature_id = models.AutoField(primary_key=True)
     feature_id = models.ForeignKey(Features, on_delete=models.CASCADE)
     attempt_id = models.ForeignKey(History, on_delete=models.CASCADE)
-    score = models.IntegerField(null=False)
+    score = models.FloatField(null=False)

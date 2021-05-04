@@ -21,7 +21,7 @@ from .models import ChildProfile, Characters, Session, History, ObjectWord, Colo
 from rest_framework.response import Response
 from . import serializers
 from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
-    edit_child_profile
+    edit_child_profile, push_file
 
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
@@ -29,14 +29,6 @@ from .feature_extractor import hbr_feature_extract, scale_strokes
 from .urduCNN import UrduCnnScorer
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
-import cv2 as cv
-import torch
-import torch.nn.functional as F
-import torchvision
-from torchvision import datasets, transforms
-from torch.utils import data
-import torch.nn as nn
 
 # from django.shortcuts import render
 # from .apps import PredictorConfig
@@ -47,6 +39,10 @@ User = get_user_model()
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+
+def feature_model_pseudo(file_path):
+    return np.random.rand(1, 28)[0]
 
 
 class AuthViewSet(viewsets.GenericViewSet):
@@ -211,118 +207,6 @@ class AuthViewSet(viewsets.GenericViewSet):
             status=status.HTTP_204_NO_CONTENT
         )
 
-    # THIS FUNCTION WAS ONLY FOR ME TO TOO AND SEE  DATA SO PLEASE DON'T USE IT
-    # @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
-    # def insert_data(self, request):
-    #     from django.utils import timezone
-    #     words = ['alif', 'ttaa', 'paa', 'seey', 'baa', 'taa', 'daal', 'zaal', 'dhaal', 'seen', 'sheen', 'zwaad','swaad']
-    #
-    #     for i in range(1,3):
-    #         His = History(session_id=Session.objects.get(session_id=i),
-    #                       stroke_score=random.random(),
-    #                       stroke_path='/strokes/' + words[i] + '.txt',
-    #                       time_taken=random.randint(1, 100),
-    #                       datetime_attempt=timezone.now() - datetime.timedelta(days=random.randint(1, 7)),
-    #                       similarity_score=random.random(),
-    #                       character_id=None,
-    #                       drawing_id=None,
-    #                       coloring_id=None,
-    #                       object_id=ObjectWord.objects.filter(object_id=i).latest('object_id'),
-    #                       is_completed=True
-    #
-    #                       )
-    #         His.save()
-    #
-    #         His = History(session_id=Session.objects.get(session_id=i),
-    #                       stroke_score=random.random(),
-    #                       stroke_path='/strokes/' + words[i] + '.txt',
-    #                       time_taken=random.randint(1, 100),
-    #                       datetime_attempt=timezone.now(),
-    #                       similarity_score=random.random(),
-    #                       character_id=None,
-    #                       drawing_id=DrawingExercise.objects.get(drawing_id=70+i),
-    #                       coloring_id=None,
-    #                       object_id=None,
-    #                       is_completed=False
-    #
-    #                       )
-    #         His.save()
-    #
-    # return Response(
-    #     data=serializers.HistorySerializer(History.objects.all(),
-    #                                        many=True).data,
-    #     status=status.HTTP_204_NO_CONTENT
-    # )
-
-    #     from django.utils import timezone
-    #     words = ['alif', 'ttaa', 'paa', 'seey', 'baa', 'taa', 'daal', 'zaal', 'dhaal', 'seen', 'sheen', 'zwaad',
-    #              'swaad']
-    #     i = 3
-    #     ch = Characters(
-    #         character_id=32,
-    #         level=1,
-    #         ref_stroke_path='/strokes/' + words[i] + '.txt',
-    #         ref_object_path='/strokes/' + words[i] + '.txt',
-    #         label=words[i],
-    #         sound_path='/strokes/' + words[i] + '.txt',
-    #         sequence_id=i)
-    #     ch.save()
-    #     return Response(
-    #         data=serializers.CharactersSerializer(
-    #             Characters.objects.filter(character_id=32), many=True).data,
-    #         status=status.HTTP_204_NO_CONTENT
-    #     )
-
-    # from django.utils import timezone
-    # import string
-    # for i in range(10):
-    #     print(i)
-    #     s = Session(
-    #         session_id=i,
-    #         profile_id=ChildProfile.objects.get(profile_id=1),
-    #         time_start=timezone.now(),
-    #         time_end=timezone.now() + datetime.timedelta(seconds=random.randint(0, 86400)),
-    #         token=''.join(random.choices(string.ascii_lowercase, k=5))
-    #     )
-    #     s.save()
-    #
-
-    # for i in range(2, 10):
-    #     ch = Characters(
-    #         character_id=i,
-    #         level=1,
-    #         ref_stroke_path='/strokes/' + words[i] + '.txt',
-    #         ref_object_path='/strokes/' + words[i] + '.txt',
-    #         label=words[i],
-    #         sound_path='/strokes/' + words[i] + '.txt',
-    #         sequence_id=i)
-    #     ch.save()
-
-    # o = ObjectWord(object_id=1, label='kursi', image_path='/strokes/' + 'stroke' + '.txt', is_object=True,
-    #                ref_image_path='/strokes/' + 'stroke' + '.txt', category='animal',
-    #                sound_path='/strokes/' + 'stroke' + '.txt')
-    # o.save()
-    #
-    # co = ColoringExercise(
-    #     coloring_id=1, ref_image_path='/strokes/' + 'stroke' + '.txt', level=1,
-    #     sound_path='/strokes/' + 'stroke' + '.txt', label='ball')
-    # co.save()
-    #
-
-    #
-    #
-    # return Response(
-    #     data=serializers.HistorySerializer(History.objects.all(),
-    #                                           many=True).data,
-    #     status=status.HTTP_204_NO_CONTENT
-    # )
-    #
-    # return Response(
-    #     data=serializers.DrawingExerciseSerializer(DrawingExercise.objects.all(),
-    #                                                many=True).data,
-    #     status=status.HTTP_204_NO_CONTENT
-    # )
-
     # Takes child profile id and gives queryset of generated drawing exercise
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def generate_drawing_exercise(self, request):
@@ -346,6 +230,18 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def generate_character_exercise(self, request):
+        """
+        inputs: profile_id (child profile id), is_seq (1 / 0) : indicating if character will be generated in sequence or no.
+        sequence if alif, bay, pay,..
+
+        For non sequence
+        ML model return a vector of length 28 containing feature  scores. For these scores feature ids are found by:
+        character_id -> cluster_id -> feature_id.
+        attempt_feature table is populated where score = feature_score_vector[feature_id - 1], feature_id = id we found.
+
+        next exercise is generated by finding 3 feature_ids with least average score. A random feature_id among them is picked, the cluster to which the id belongs is
+        found and a random character from the cluster is given as next exercise.
+        """
         # child profile_id to session session_id to History character_id to Character sequence_id
 
         profile_id_stroke = request.data.get('profile_id', None)
@@ -354,6 +250,8 @@ class AuthViewSet(viewsets.GenericViewSet):
             profile_id=profile_id_stroke).latest('session_id')
         profile_session_character_id = History.objects.values_list('character_id', flat=True).filter(
             session_id=profile_session_id).latest('character_id')
+
+        History_attempt_id = History.objects.filter(session_id=profile_session_id).latest('attempt_id')
 
         if is_seq == 1:
             character_sequence_id = Characters.objects.values_list('sequence_id', flat=True).filter(
@@ -364,28 +262,49 @@ class AuthViewSet(viewsets.GenericViewSet):
                     Characters.objects.filter(sequence_id=character_sequence_id + 1)[:1], many=True).data,
                 status=status.HTTP_204_NO_CONTENT
             )
+        else:
 
-        character_cluster_id = Characters.objects.values_list('cluster_id', flat=True).filter(
-            character_id=profile_session_character_id).latest('cluster_id')
+            feature_score_vector = feature_model_pseudo("pseudo_path")
+            character_cluster_id = Characters.objects.values_list('cluster_id', flat=True).filter(
+                character_id=profile_session_character_id).latest('cluster_id')
 
-        cluster_feature_id = ClusterFeature.objects.filter(cluster_id=character_cluster_id).values_list('feature_id',
-                                                                                                        flat=True)
-        feature_name_lst = []
-        for i in cluster_feature_id:
-            feature_name_lst.append(
-                list(Features.objects.filter(feature_id=i).values_list('feature_name', flat=True))[0])
+            cluster_feature_id = list(
+                ClusterFeature.objects.filter(cluster_id=character_cluster_id).values_list('feature_id',
+                                                                                           flat=True))
+            ## populating attept_feature with feature ids and score
 
-        history_attempt_id = History.objects.values_list('attempt_id', flat=True).filter(session_id=profile_session_id).latest('attempt_id')
-        print(history_attempt_id)
-        print(cluster_feature_id)
-        #AttemptFeatures.objects.filter(attempt_id= history_attempt_id)
+            # for i in cluster_feature_id:
+            #     AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i), score=feature_score_vector[i - 1],
+            #                                    attempt_id=History_attempt_id)
 
 
-        return Response(
-            data=serializers.FeaturesSerializer(
-                Features.objects.filter(feature_id=1), many=True).data,
-            status=status.HTTP_204_NO_CONTENT
-        )
+            # finding average score of feature_id
+            from django.db.models import Avg
+
+            feature_averages_queryset = (AttemptFeatures.objects.values('feature_id').annotate(avg=Avg('score')))
+            averages_lst = list(feature_averages_queryset.values_list('avg', flat=True))
+            feature_id_lst = list(feature_averages_queryset.values_list('feature_id', flat=True))
+            sorted_averages_list = sorted(averages_lst)
+            if len(sorted_averages_list) > 3:
+                sorted_averages_list = sorted_averages_list[:3]
+
+            #selecting random feature from min 3 avg score
+
+            features_min_score  = Features.objects.get(feature_id=feature_id_lst[averages_lst.index(random.choice(sorted_averages_list))])
+            cluster_feature_id = list(ClusterFeature.objects.filter(feature_id=features_min_score).values_list('cluster_id',flat=True))
+
+            #randomly choosing cluster
+            cluster_feature_id = random.choice(cluster_feature_id)
+            cluster_cluster_id = Clusters.objects.get(cluster_id = cluster_feature_id)
+            character_cluster = list(Characters.objects.filter(cluster_id=cluster_cluster_id).values_list('character_id',flat=True))
+
+            return Response(
+                data=serializers.CharactersSerializer(
+                    Characters.objects.filter(character_id = random.choice(character_cluster)), many=True).data,
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def time_on_exercise(self, request):
@@ -468,11 +387,17 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         plt.plot(draw_dates, draw_time, label='Drawing')
         plt.plot(urdu_dates, urdu_time, label='Urdu')
+
+        file_name = str(profile_id_child) + '.png'
+
         plt.legend()
         plt.title('Time Spent on Exercises')
         plt.xlabel('date')
         plt.ylabel('time spent')
-        plt.savefig('temp.png')
+        plt.savefig(file_name)
+
+        push_file(file_name, "aangan-filesystem", 'time')
+
         plt.clf()
 
         plt.plot(draw_dates, draw_score, label='Drawing')
@@ -703,7 +628,7 @@ class AuthViewSet(viewsets.GenericViewSet):
     def check(self, request):
         words = ['alif', 'bay', 'jeem']
         cluster_id_lst = [1, 2, 3]
-        AttemptFeatures.objects.create(attempt_id=51, score= random.random(0,1), feature_id=)
+        AttemptFeatures.objects.create(attempt_id=51, score=random.random(0, 1), feature_id=1)
         return Response(
             data=serializers.CharactersSerializer(
                 Characters.objects.filter(character_id=32), many=True).data,

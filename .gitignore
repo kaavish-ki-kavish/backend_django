@@ -279,3 +279,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# folder
+.aangan-filesystem/
