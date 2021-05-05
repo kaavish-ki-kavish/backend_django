@@ -16,12 +16,12 @@ from django.db.models import Max, Min
 import os, datetime, random, copy
 
 from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
-    ClusterFeature, Features, AttemptFeatures
+    ClusterFeature, Features, AttemptFeatures, Dashoard
 
 from rest_framework.response import Response
 from . import serializers
 from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
-    edit_child_profile, push_file
+    edit_child_profile, push_file, push_image_file
 
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
@@ -187,9 +187,16 @@ class AuthViewSet(viewsets.GenericViewSet):
     def save_stroke(self, request):
         x = request.data.get('x', None)
         y = request.data.get('y', None)
-        stroke_name = request.data.get('s', None)
         profile_id_stroke = request.data.get('profile_id', None)
-        path = '/strokes' + stroke_name + '.txt'
+
+        stroke_session_id = Session.objects.values_list('session_id', flat=True).filter(
+            profile_id=profile_id_stroke).latest('session_id')
+        stroke_attempt_id = History.objects.values_list('attempt_id', flat=True).filter(
+            session_id=stroke_session_id).latest('attempt_id')
+
+        stroke_name = str(profile_id_stroke) + '_' + str(stroke_attempt_id) + '.txt'
+        path = 'strokes/' + stroke_name
+
         f = open(os.path.join(__location__, path), 'w')
         f.write('x' + '\n')
         for x_cord in x:
@@ -199,11 +206,11 @@ class AuthViewSet(viewsets.GenericViewSet):
             f.write(str(y_cord) + '\n')
         f.close()
 
-        # stroke_session_id = Session.objects.filter(profile_id=profile_id_stroke)
-        stroke_session_id = Session.objects.values_list('session_id', flat=True).get(profile_id=profile_id_stroke)
+        push_file('aangan-filesystem', path, stroke_name)
 
         return Response(
-            data=serializers.ColoringExerciseSerializer(ColoringExercise.objects.all(), many=True).data,
+            data={
+                'stroke_path': 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/strokes/' + stroke_name},
             status=status.HTTP_204_NO_CONTENT
         )
 
@@ -277,7 +284,6 @@ class AuthViewSet(viewsets.GenericViewSet):
             #     AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i), score=feature_score_vector[i - 1],
             #                                    attempt_id=History_attempt_id)
 
-
             # finding average score of feature_id
             from django.db.models import Avg
 
@@ -288,153 +294,205 @@ class AuthViewSet(viewsets.GenericViewSet):
             if len(sorted_averages_list) > 3:
                 sorted_averages_list = sorted_averages_list[:3]
 
-            #selecting random feature from min 3 avg score
+            # selecting random feature from min 3 avg score
 
-            features_min_score  = Features.objects.get(feature_id=feature_id_lst[averages_lst.index(random.choice(sorted_averages_list))])
-            cluster_feature_id = list(ClusterFeature.objects.filter(feature_id=features_min_score).values_list('cluster_id',flat=True))
+            features_min_score = Features.objects.get(
+                feature_id=feature_id_lst[averages_lst.index(random.choice(sorted_averages_list))])
+            cluster_feature_id = list(
+                ClusterFeature.objects.filter(feature_id=features_min_score).values_list('cluster_id', flat=True))
 
-            #randomly choosing cluster
+            # randomly choosing cluster
             cluster_feature_id = random.choice(cluster_feature_id)
-            cluster_cluster_id = Clusters.objects.get(cluster_id = cluster_feature_id)
-            character_cluster = list(Characters.objects.filter(cluster_id=cluster_cluster_id).values_list('character_id',flat=True))
+            cluster_cluster_id = Clusters.objects.get(cluster_id=cluster_feature_id)
+            character_cluster = list(
+                Characters.objects.filter(cluster_id=cluster_cluster_id).values_list('character_id', flat=True))
 
             return Response(
                 data=serializers.CharactersSerializer(
-                    Characters.objects.filter(character_id = random.choice(character_cluster)), many=True).data,
+                    Characters.objects.filter(character_id=random.choice(character_cluster)), many=True).data,
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+    @action(methods=["GET"], detail=False)
+    def generate_urdu_word_exercise(self, request):
+        """
+        generating random urdu word exercise
+        """
+        number_of_records = ObjectWord.objects.count()
+        all_object_word = ObjectWord.objects.all()
+        record_id = list(all_object_word.aggregate(Min('object_id')).values())[0] + int(
+            random.random() * number_of_records)
+        if record_id < len(all_object_word):
+            record_id = record_id - 1
+        random_exercise = ObjectWord.objects.get(pk=record_id)
+        serializer = serializers.ObjectWordSerializer
+        return Response(data=serializer(random_exercise).data, status=status.HTTP_204_NO_CONTENT)
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def time_score_completion__exercise(self, request):
+        """
+        Takes two inputs:
+        i)profile id of child : int id
+        ii) number of days for which we have to see the graph :int days
+        makes dashboard graphs for time, drawing, % completed. pushes them to github if they are not in database and returns their path. If they are in databse returns their path.
+        """
+        profile_id_child = request.data.get('profile_id', None)
+        days = request.data.get('days', None)
+        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+        latest_attempt_id = History.objects.values_list('attempt_id', flat=True).latest('attempt_id')
+        file_name = str(profile_id_child) + '_' + str(latest_attempt_id) + '.png'
+
+        dashboard_time_graph_path = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/dashboard/time/' + file_name
+        dashboard_score_graph_path = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/dashboard/score/' + file_name
+        dashboard_completion_graph_path = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/dashboard/completion/' + file_name
+
+        if Dashoard.objects.filter(time_path=dashboard_time_graph_path).exists():  # if any one exists, all exist
+            return Response(
+                data={
+                    'time_graph_path': dashboard_time_graph_path,
+                    'score_graph_path': dashboard_score_graph_path,
+                    'score_completion_path': dashboard_completion_graph_path},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        else:
+
+            graph_val_time_draw = []
+            graph_val_score_draw = []
+
+            graph_val_time_urdu = []
+            graph_val_score_urdu = []
+
+            drawing_completion = 0
+            urdu_completion = 0
+            for i in child_all_sessions:
+                drawing_completion += History.objects.filter(session_id=i).filter(
+                    Q(drawing_id__isnull=False)).distinct().count()
+
+                # character, object non null
+                urdu_completion += History.objects.filter(session_id=i).filter(
+                    Q(character_id__isnull=False) | Q(object_id__isnull=False)).distinct().count()
+
+                # for each session_id getting  time taken
+
+                # DRAWING
+
+                # for each session_id getting time taken
+                date_time_ex_draw = History.objects.filter(session_id=i).filter(Q(drawing_id__isnull=False)).filter(
+                    datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+                ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
+
+                # for each session_id getting sum stroke score
+                date_score_ex_draw = History.objects.filter(session_id=i).filter(Q(drawing_id__isnull=False)).filter(
+                    datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+                ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
+
+                # URDU
+
+                date_time_ex_urdu = History.objects.filter(session_id=i).filter(
+                    Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
+                    datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+                ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
+
+                # for each session_id getting sum stroke score
+                date_score_ex_urdu = History.objects.filter(session_id=i).filter(
+                    Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
+                    datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+                ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
+
+                draw_dates = list(date_time_ex_draw.values_list('datetime_attempt', flat=True))
+                draw_time = list(date_time_ex_draw.values_list('data_sum', flat=True))
+                draw_score = list(date_score_ex_draw.values_list('data_sum', flat=True))
+
+                urdu_dates = list(date_time_ex_urdu.values_list('datetime_attempt', flat=True))
+                urdu_time = list(date_time_ex_urdu.values_list('data_sum', flat=True))
+                urdu_score = list(date_score_ex_urdu.values_list('data_sum', flat=True))
+
+                for j in range(len(draw_dates)):
+                    # for draw
+                    graph_val_time_draw.append((draw_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), draw_time[j]))
+                    graph_val_score_draw.append((draw_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), draw_score[j]))
+
+                    # for urdu
+                    graph_val_time_urdu.append((urdu_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), urdu_time[j]))
+                    graph_val_score_urdu.append((urdu_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), urdu_score[j]))
+
+            graph_val_time_draw.sort()
+            graph_val_score_draw.sort()
+
+            graph_val_time_urdu.sort()
+            graph_val_score_urdu.sort()
+
+            draw_dates = []
+            draw_time = []
+            draw_score = []
+            for i in range(len(graph_val_time_draw)):
+                draw_dates.append(graph_val_time_draw[i][0])
+                draw_time.append(graph_val_time_draw[i][1])
+                draw_score.append(graph_val_score_draw[i][1])
+
+            urdu_dates = []
+            urdu_time = []
+            urdu_score = []
+            for i in range(len(graph_val_time_urdu)):
+                urdu_dates.append(graph_val_time_urdu[i][0])
+                urdu_time.append(graph_val_time_urdu[i][1])
+                urdu_score.append(graph_val_score_urdu[i][1])
+
+            plt.plot(draw_dates, draw_time, label='Drawing')
+            plt.plot(urdu_dates, urdu_time, label='Urdu')
+            plt.legend()
+            plt.title('Time Spent on Exercises')
+            plt.xlabel('date')
+            plt.ylabel('time spent')
+            figure_path = 'user/dashboard/time/'
+            plt.savefig(figure_path + file_name)
+
+            push_image_file('dashboard/time/' + file_name, file_name)
+
+            plt.clf()
+
+            plt.plot(draw_dates, draw_score, label='Drawing')
+            plt.plot(urdu_dates, urdu_score, label='Urdu')
+            plt.legend()
+            plt.title('Feedback Scores')
+            plt.xlabel('date')
+            plt.ylabel('score')
+            figure_path = 'user/dashboard/score/'
+            plt.savefig(figure_path + file_name)
+
+            push_image_file('dashboard/score/' + file_name, file_name)
+
+            plt.clf()
+
+            drawing_total = DrawingExercise.objects.all().count()
+            urdu_total = Characters.objects.all().count() + ObjectWord.objects.all().count()
+
+            completed_drawing = int((drawing_completion * 100) / drawing_total)
+            completed_urdu = int((urdu_completion * 100) / urdu_total)
+
+            exercise_name = ['Urdu', 'Drawing']
+            exercise_completion = [completed_urdu, completed_drawing]
+            plt.barh(exercise_name, exercise_completion)
+            plt.title('Exercise Completion')
+            plt.xlabel('percentage completed')
+            figure_path = 'user/dashboard/completion/'
+            plt.savefig(figure_path + file_name)
+
+            push_image_file('dashboard/completion/' + file_name, file_name)
+
+            Dashoard.objects.create(time_path=dashboard_time_graph_path, score_path=dashboard_score_graph_path,
+                                    completion_path=dashboard_completion_graph_path,
+                                    profile_id=ChildProfile.objects.get(profile_id=profile_id_child))
+
+            return Response(
+                data={
+                    'time_graph_path': dashboard_time_graph_path,
+                    'score_graph_path': dashboard_score_graph_path,
+                    'score_completion_path': dashboard_completion_graph_path},
                 status=status.HTTP_204_NO_CONTENT
             )
 
 
-
-    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    def time_on_exercise(self, request):
-
-        profile_id_child = request.data.get('profile_id', None)
-        days = request.data.get('days', None)
-        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
-
-        graph_val_time_draw = []
-        graph_val_score_draw = []
-
-        graph_val_time_urdu = []
-        graph_val_score_urdu = []
-        for i in child_all_sessions:
-            # for each session_id getting  time taken
-
-            # DRAWING
-
-            # for each session_id getting time taken
-            date_time_ex_draw = History.objects.filter(session_id=i).filter(Q(drawing_id__isnull=False)).filter(
-                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
-            ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
-
-            # for each session_id getting sum stroke score
-            date_score_ex_draw = History.objects.filter(session_id=i).filter(Q(drawing_id__isnull=False)).filter(
-                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
-            ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
-
-            # URDU
-
-            date_time_ex_urdu = History.objects.filter(session_id=i).filter(
-                Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
-                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
-            ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
-
-            # for each session_id getting sum stroke score
-            date_score_ex_urdu = History.objects.filter(session_id=i).filter(
-                Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
-                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
-            ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
-
-            draw_dates = list(date_time_ex_draw.values_list('datetime_attempt', flat=True))
-            draw_time = list(date_time_ex_draw.values_list('data_sum', flat=True))
-            draw_score = list(date_score_ex_draw.values_list('data_sum', flat=True))
-
-            urdu_dates = list(date_time_ex_urdu.values_list('datetime_attempt', flat=True))
-            urdu_time = list(date_time_ex_urdu.values_list('data_sum', flat=True))
-            urdu_score = list(date_score_ex_urdu.values_list('data_sum', flat=True))
-
-            for j in range(len(draw_dates)):
-                # for draw
-                graph_val_time_draw.append((draw_dates[j].strftime("%d-%B-%Y %H:%M:%S"), draw_time[j]))
-                graph_val_score_draw.append((draw_dates[j].strftime("%d-%B-%Y %H:%M:%S"), draw_score[j]))
-
-                # for urdu
-                graph_val_time_urdu.append((urdu_dates[j].strftime("%d-%B-%Y %H:%M:%S"), urdu_time[j]))
-                graph_val_score_urdu.append((urdu_dates[j].strftime("%d-%B-%Y %H:%M:%S"), urdu_score[j]))
-
-        graph_val_time_draw.sort()
-        graph_val_score_draw.sort()
-
-        graph_val_time_urdu.sort()
-        graph_val_score_urdu.sort()
-
-        draw_dates = []
-        draw_time = []
-        draw_score = []
-        for i in range(len(graph_val_time_draw)):
-            draw_dates.append(graph_val_time_draw[i][0])
-            draw_time.append(graph_val_time_draw[i][1])
-            draw_score.append(graph_val_score_draw[i][1])
-
-        urdu_dates = []
-        urdu_time = []
-        urdu_score = []
-        for i in range(len(graph_val_time_urdu)):
-            urdu_dates.append(graph_val_time_urdu[i][0])
-            urdu_time.append(graph_val_time_urdu[i][1])
-            urdu_score.append(graph_val_score_urdu[i][1])
-
-        plt.plot(draw_dates, draw_time, label='Drawing')
-        plt.plot(urdu_dates, urdu_time, label='Urdu')
-
-        file_name = str(profile_id_child) + '.png'
-
-        plt.legend()
-        plt.title('Time Spent on Exercises')
-        plt.xlabel('date')
-        plt.ylabel('time spent')
-        plt.savefig(file_name)
-
-        push_file(file_name, "aangan-filesystem", 'time')
-
-        plt.clf()
-
-        plt.plot(draw_dates, draw_score, label='Drawing')
-        plt.plot(urdu_dates, urdu_score, label='Urdu')
-        plt.title('Feedback Scores')
-        plt.xlabel('date')
-        plt.ylabel('score')
-        plt.savefig('temp_score.png')
-
-        return Response(
-            data={'time_graph_path': 'temp.png',
-                  'score_graph_path': 'temp_score.png'},
-            status=status.HTTP_204_NO_CONTENT
-        )
-
-    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    def completion_exercise(self, request):
-        drawing_completion = 0
-        character_completion = 0
-        profile_id_child = request.data.get('profile_id', None)
-        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
-        for i in child_all_sessions:
-            # drawing non null
-            drawing_completion += History.objects.filter(session_id=i).filter(
-                Q(drawing_id__isnull=False)).distinct().count()
-
-            # character, object non null
-            character_completion += History.objects.filter(session_id=i).filter(
-                Q(character_id__isnull=False) | Q(object_id__isnull=False)).distinct().count()
-
-        drawing_total = DrawingExercise.objects.all().count()
-        urdu_total = Characters.objects.all().count() + ObjectWord.objects.all().count()
-        return Response(
-            data={'drawing': int((drawing_completion * 100) / drawing_total),
-                  'character': int((character_completion * 100) / urdu_total)},
-            status=status.HTTP_204_NO_CONTENT
-        )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def time_last_n_days(self, request):
@@ -626,11 +684,8 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def check(self, request):
-        words = ['alif', 'bay', 'jeem']
-        cluster_id_lst = [1, 2, 3]
-        AttemptFeatures.objects.create(attempt_id=51, score=random.random(0, 1), feature_id=1)
         return Response(
-            data=serializers.CharactersSerializer(
-                Characters.objects.filter(character_id=32), many=True).data,
+            data=serializers.DrawingExerciseSerializer(
+                DrawingExercise.objects.all(), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )

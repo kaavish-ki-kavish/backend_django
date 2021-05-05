@@ -121,3 +121,10 @@ class AttemptFeatures(models.Model):
     feature_id = models.ForeignKey(Features, on_delete=models.CASCADE)
     attempt_id = models.ForeignKey(History, on_delete=models.CASCADE)
     score = models.FloatField(null=False)
+
+class Dashoard(models.Model):
+    dashboard_id = models.AutoField(primary_key=True)
+    time_path = models.CharField(max_length=255, null=False)
+    score_path = models.CharField(max_length=255, null=False)
+    completion_path = models.CharField(max_length=255, null=False)
+    profile_id = models.ForeignKey(ChildProfile, on_delete=models.CASCADE)

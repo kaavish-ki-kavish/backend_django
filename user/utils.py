@@ -46,42 +46,68 @@ def edit_child_profile(profile_id, name, dob, gender, level, parent):
     else:
         raise serializers.ValidationError("Parent does not have authorization to edit child")
 
+    # from git import Repo
+    #
+    # repo_dir = repo_name
+    # repo = Repo(repo_name)
+    # file_path = 'dashboard/' + git_folder + '/' + file_name
+    # file_list = [file_path]
+    # commit_message = 'committing' + file_name
+    # repo.index.add(file_list)
+    # repo.index.commit(commit_message)
+    # origin = repo.remote('origin')
+    # origin.push()
 
-def push_file(file_name, repo_name, git_folder):
-    # token = '76148974bd3158362e:5e3e72fe28d385c632g4d'
+
+import os
+
+__location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+
+def push_file(repo_name, git_folder_path, file_name):
+    token = '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'
     # p_token = ''.join([chr(ord(i) - 1) for i in token])
-    # g = Github(p_token)
-    # repo = None
-    #
-    # for repo in g.get_user().get_repos():
-    #     if repo.name == repo_name:
-    #         break
-    # if repo is None:
-    #     return
-    #
-    # # with open(file_name, 'r') as file:
-    # #     content = file.read
-    # from PIL import Image
-    # content = Image.open(file_name)
-    #
-    # # Output Images
-    # content.show()
-    #
-    #
-    # # Upload to github
-    # git_prefix = 'dashboard/'+git_folder + '/'
-    # git_file = git_prefix + file_name
-    # repo.create_file(git_file, f"committing {file_name}", content, branch="main")
-    # print(git_file + ' CREATED')
+    g = Github(token)
+    repo = None
 
-    from git import Repo
+    for repo in g.get_user().get_repos():
+        if repo.name == repo_name:
+            break
+    if repo is None:
+        return
 
-    repo_dir = repo_name
-    repo = Repo(repo_name)
-    file_path = 'dashboard/' + git_folder + '/' + file_name
-    file_list = [file_path]
-    commit_message = 'committing' + file_name
-    repo.index.add(file_list)
-    repo.index.commit(commit_message)
-    origin = repo.remote('origin')
-    origin.push()
+    # git_prefix = git_folder_path
+    git_file = git_folder_path
+    file = open(os.path.join(__location__, git_file), 'r')
+    content = file.read()
+    file.close()
+
+    repo.create_file(git_file, f"committing {file_name}", content, branch="main")
+    print(git_file + ' CREATED')
+
+
+import base64
+
+def push_image_file( git_folder_path, file_name):
+    repo_name = 'aangan-filesystem'
+    token = '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'
+    g = Github(token)
+    repo = None
+
+    for repo in g.get_user().get_repos():
+        if repo.name == repo_name:
+            break
+    if repo is None:
+        return
+
+    git_file = git_folder_path
+
+    with open(os.path.join(__location__, git_file), 'rb') as file:
+        content = file.read()
+    if file_name.endswith('.png'):
+        data = base64.b64encode(content)
+
+
+    repo.create_file(git_file, f"committing {file_name}", content, branch="main")
+    print(git_file + ' CREATED')

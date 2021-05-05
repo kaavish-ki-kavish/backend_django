@@ -3,7 +3,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import serializers
 from django.contrib.auth.models import BaseUserManager
 from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
-     ClusterFeature, Features, AttemptFeatures
+     ClusterFeature, Features, AttemptFeatures, Dashoard
 
 User = get_user_model()
 
@@ -164,16 +164,8 @@ class AttemptFeaturesSerializer(serializers.ModelSerializer):
         model = AttemptFeatures
         fields = ('attempt_id', 'attempt_feature_id', 'feature_id', 'score')
 
-# class HistSessionSerializer(serializers.Serializer):
-#     session_id = serializers.IntegerField()
-#     time_start = serializers.DateTimeField()
-#     time_end = serializers.DateTimeField()
-#     token = serializers.CharField(max_length=255)
-#
-#     attempt_id = serializers.IntegerField()
-#     stroke_path = serializers.CharField(max_length=255)
-#     time_taken = serializers.IntegerField()
-#     stroke_score = serializers.FloatField()
-#     similarity_score = serializers.FloatField()
-#     datetime_attempt = serializers.DateTimeField()
-#     is_completed = serializers.BooleanField()
+
+class DashboardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Dashoard
+        fields = ('dashboard_id', 'time_path', 'score_path', 'completion_path', 'profile_id')
