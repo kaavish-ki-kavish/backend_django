@@ -10,9 +10,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from django.db.models import Q
 from django.utils import timezone
-from django.db.models import Sum
-from django.db.models import Count
-from django.db.models import Max, Min
+from django.db.models import Sum, Count, Max, Min
 import os, datetime, random, copy
 
 from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
@@ -21,7 +19,7 @@ from .models import ChildProfile, Characters, Session, History, ObjectWord, Colo
 from rest_framework.response import Response
 from . import serializers
 from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
-    edit_child_profile, push_file
+    edit_child_profile, push_file, get_whole_stroke
 
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
@@ -29,6 +27,16 @@ from .feature_extractor import hbr_feature_extract, scale_strokes
 from .urduCNN import UrduCnnScorer
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw
+import cv2 as cv
+import torch
+import torch.nn.functional as F
+import torchvision
+import sys
+from torchvision import datasets, transforms
+from torch.utils import data
+import torch.nn as nn
+import requests
 
 # from django.shortcuts import render
 # from .apps import PredictorConfig
@@ -58,7 +66,8 @@ class AuthViewSet(viewsets.GenericViewSet):
         'get_most_recent_child': serializers.ChildRegisterSerializer,
         'edit_child': serializers.EditChildSerializer,
         'generate_character': serializers.Characters,
-        'session': serializers.HistorySerializer
+        'session': serializers.HistorySerializer,
+        'get_score': serializers.DataEntrySerializer,
     }
     queryset = ''
 
@@ -227,18 +236,86 @@ class AuthViewSet(viewsets.GenericViewSet):
                 DrawingExercise.objects.filter(drawing_id=(profile_session_drawing_id + 1)), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
+    
+    @action(methods=['POST'], detail=False)
+    def get_score(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        scores = []
+        whole_x, whole_y, penup = get_whole_stroke(data['data'])
+        char = data['char']
 
+        url = 'http://aangantf.herokuapp.com/api/auth/get_score'
+        
+        msg = 'Successful'
+        
+        if data['exercise'] == 0: #drawing
+            tf_data = {
+                'exercise': 0,
+                'char': char,
+                'img': [[0, 0]],
+                'whole_x': whole_x,
+                'whole_y': whole_y,
+                'pen_up': list(penup)
+            }
+            response = requests.post(url, json=tf_data)
+            print(response)
+            print(type(response))
+            sys.stdout.flush()
+            print(response.json()['scores'])
+            sys.stdout.flush()
+            a = response.json()['scores'][0]#feature_scorer(img, p_features,s_features, verbose= 1)
+            b = response.json()['scores'][1] #perfect_scorer(whole_x, whole_y, penup, char)
+            scores.append(a)
+            scores.append(b)
+
+
+
+        elif data['exercise'] == 1: #urdu letters
+            scorer = UrduCnnScorer(whole_x, whole_y, penup)
+            label = scorer.NUM2LABEL.index(char)
+            img = scorer.preprocessing()
+            print(img.shape)
+            scores.append(scorer.test_img(img)[0, label])
+                
+            tf_data = {
+                'exercise': 1,
+                'char': char, 
+                'img': img.tolist(), 
+                'whole_x' : whole_x, 
+                'whole_y': whole_y, 
+                'pen_up': list(penup)
+            }
+        
+            response = requests.post(url, json=tf_data)       
+            print(response)
+            print(type(response))
+            sys.stdout.flush()
+            print(response.json()['scores']) 
+            sys.stdout.flush()
+            #p_features, s_features = get_feature_vector(char)
+            a = response.json()['scores'][0]#feature_scorer(img, p_features,s_features, verbose= 1)
+            b = response.json()['scores'][1] #perfect_scorer(whole_x, whole_y, penup, char)
+            scores.append(a)
+            scores.append(b)
+
+        print(scores)
+        response = {
+            'message': msg,
+            'prediction': np.mean(scores),
+        }
+        return Response(response)
+    
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def generate_character_exercise(self, request):
         """
         inputs: profile_id (child profile id), is_seq (1 / 0) : indicating if character will be generated in sequence or no.
         sequence if alif, bay, pay,..
-
         For non sequence
         ML model return a vector of length 28 containing feature  scores. For these scores feature ids are found by:
         character_id -> cluster_id -> feature_id.
         attempt_feature table is populated where score = feature_score_vector[feature_id - 1], feature_id = id we found.
-
         next exercise is generated by finding 3 feature_ids with least average score. A random feature_id among them is picked, the cluster to which the id belongs is
         found and a random character from the cluster is given as next exercise.
         """
@@ -303,8 +380,6 @@ class AuthViewSet(viewsets.GenericViewSet):
                     Characters.objects.filter(character_id = random.choice(character_cluster)), many=True).data,
                 status=status.HTTP_204_NO_CONTENT
             )
-
-
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def time_on_exercise(self, request):

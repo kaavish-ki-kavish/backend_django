@@ -13,6 +13,8 @@ import torch.nn as nn
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 class Urdu_CNN(nn.Module):
     def __init__(self):
@@ -34,12 +36,12 @@ class Urdu_CNN(nn.Module):
 
 
 class UrduCnnScorer:
-    def __init__(self, x, y):
+    def __init__(self, x, y, penups):
         file = open(os.path.join(__location__, 'urdu_model_state_dict_blur.pt'), 'rb')
         # Load
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cpu')
         if torch.cuda.is_available():
-            map_location = lambda storage, loc: storage.cuda()
+            map_location = 'cpu' #lambda storage, loc: storage.cuda()
         else:
             map_location = 'cpu'
 
@@ -50,6 +52,7 @@ class UrduCnnScorer:
         epoch = checkpoint['epoch']
         self.x = x
         self.y = y
+        self.penup = penups
         self.NUM2LABEL = ['alif', 'alif mad aa', 'ayn', 'baa', 'bari yaa', 'cheey', 'choti yaa', 'daal', 'dhaal', 'faa',
                           'gaaf', 'ghain', 'haa1', 'haa2', 'haa3', 'hamza', 'jeem', 'kaaf', 'khaa', 'laam', 'meem',
                           'noon', 'noonghunna', 'paa', 'qaaf', 'raa', 'rhraa', 'seen', 'seey', 'sheen', 'swaad', 'taa',
@@ -64,11 +67,22 @@ class UrduCnnScorer:
         x_origin = [x_cord + padding // 2 - x_0 for x_cord in self.x]
         y_origin = [y_cord + padding // 2 - y_0 for y_cord in self.y]
         x_y = list(zip(x_origin, y_origin))
-
         im = Image.new('RGB', (w + padding, h + padding), (0, 0, 0))
         draw = ImageDraw.Draw(im)
-        draw.line(x_y)
+
+        x_y = []
+        for i in range(len(x_origin) - 1):
+            if (i + 1) not in self.penup:
+                x_y.append((x_origin[i], y_origin[i]))
+            else:
+                draw.line(x_y, fill=(255, 255, 255), width=10)
+                x_y = []
+
+        draw.line(x_y, fill=(255, 255, 255), width=10)
+
+        #draw.line(x_y, width = 10)
         img_array = np.array(im)
+
         # plt.imshow(img_array[:, :, 0])
         # plt.axis('off')
         # plt.show()
@@ -76,7 +90,7 @@ class UrduCnnScorer:
 
     def crop_image(self, array):
         ret3, img = cv.threshold(array, 200, 255, cv.THRESH_BINARY)  # +cv.THRESH_OTSU)
-
+        img = ~img
         # unique_elements, counts_elements = np.unique(img, return_counts=True)
 
         desired_size = 256
@@ -143,9 +157,8 @@ class UrduCnnScorer:
 
             output = self.model(crop_img)
             sm = torch.nn.Softmax(dim=1)
-            probabilities = sm(output)
-            top3p, top3l = torch.topk(probabilities, 3)
-            return self.NUM2LABEL[output.max(1)[1]], top3p.tolist()[0][0]
+
+            return sm(output)
 
             # print([NUM2LABEL[i] for i in top3l.tolist()[0]])
             # predicted = output.max(1)[1]
@@ -166,11 +179,9 @@ class UrduCnnScorer:
             # plt.title(f"{NUM2LABEL[predicted]}: {top3p.tolist()[0][0]}")
             # plt.show()
 
-    def get_score(self):
+def get_score(self, label):
         pre = self.preprocessing()
-        score = self.test_img(pre)
-        return score
-
+        return self.test_img(pre)[label]
 
 # x = [106, 79, 61, 43, 25, 14, 3, 0, 1, 10, 23, 42, 65, 83, 99, 121, 139, 157, 174, 209, 221, 233, 251, 255, 255, 254,
 #      248, 226, 201, 163, 109, 107, 104, 118, 139, 160, 162, 159, 139, 124, 117]
@@ -185,6 +196,7 @@ class UrduCnnScorer:
 
 # x = [2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
 # y = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
 
 #urdu_scorer = UrduCnnScorer(x, y)
 #urdu_scorer.preprocessing()
@@ -249,3 +261,9 @@ class UrduCnnScorer:
 # clusters['chashmi-ha'] = ['haa2']
 # clusters['choti-yay'] = ['choti-yaa']
 # clusters['bari-yay'] = ['bari-yaa']
+
+# #
+# urdu_scorer = UrduCnnScorer(x, y)
+# score = urdu_scorer.get_score()
+# print(score)
+

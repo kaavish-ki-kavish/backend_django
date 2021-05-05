@@ -137,7 +137,6 @@ class ColoringExerciseSerializer(serializers.ModelSerializer):
         model = ColoringExercise
         fields = ('coloring_id', 'ref_image_path', 'level', 'sound_path', 'label')
 
-
 class ClustersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clusters
@@ -164,16 +163,11 @@ class AttemptFeaturesSerializer(serializers.ModelSerializer):
         model = AttemptFeatures
         fields = ('attempt_id', 'attempt_feature_id', 'feature_id', 'score')
 
-# class HistSessionSerializer(serializers.Serializer):
-#     session_id = serializers.IntegerField()
-#     time_start = serializers.DateTimeField()
-#     time_end = serializers.DateTimeField()
-#     token = serializers.CharField(max_length=255)
-#
-#     attempt_id = serializers.IntegerField()
-#     stroke_path = serializers.CharField(max_length=255)
-#     time_taken = serializers.IntegerField()
-#     stroke_score = serializers.FloatField()
-#     similarity_score = serializers.FloatField()
-#     datetime_attempt = serializers.DateTimeField()
-#     is_completed = serializers.BooleanField()
+class DataEntrySerializer(serializers.Serializer):
+    char = serializers.CharField(max_length= 255, required= True)
+    data = serializers.ListField(
+        child=serializers.ListField(
+            child = serializers.ListField(
+            child= serializers.IntegerField())))
+    exercise = serializers.IntegerField()
+

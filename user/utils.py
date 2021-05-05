@@ -4,7 +4,15 @@ from .models import ChildProfile
 from github import Github
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import numpy as np
+import os
+import torchvision
+from torchvision import datasets, transforms
+import cv2
 
+
+__location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 def get_and_authenticate_user(request, email, password):
     user = authenticate(username=email, password=password)
@@ -85,3 +93,53 @@ def push_file(file_name, repo_name, git_folder):
     repo.index.commit(commit_message)
     origin = repo.remote('origin')
     origin.push()
+
+    
+def get_whole_stroke(drawing):
+    whole_x = []
+    whole_y = []
+    penup = set()  # points at which there is a penup
+    for stroke in drawing:
+        for x, y in stroke:
+            whole_x += [x]
+            whole_y += [y]
+        penup.add(len(whole_x))  # appending the index for penup
+
+    return whole_x, whole_y, penup
+
+
+from PIL import Image, ImageDraw
+
+
+def crop_image(array):
+    ret3, img = cv2.threshold(array, 10, 255, cv2.THRESH_BINARY)  # +cv.THRESH_OTSU)
+    img = ~img
+
+    # unique_elements, counts_elements = np.unique(img, return_counts=True)
+
+    desired_size = 256
+    # h, w = img.shape
+
+    y, x = np.where(img == 0)
+    y_min, y_max = y.min(), y.max()
+    x_min, x_max = x.min(), x.max()
+
+    img = img[y_min: y_max, x_min: x_max]
+
+    old_size = img.shape[:2]  # old_size is in (height, width) format
+
+    ratio = float(desired_size) / max(old_size)
+    new_size = tuple([int(x * ratio) for x in old_size])
+
+    # new_size should be in (width, height) format
+    img = cv2.resize(img, (new_size[1], new_size[0]))
+
+    delta_w = desired_size - new_size[1]
+    delta_h = desired_size - new_size[0]
+    top, bottom = delta_h // 2, delta_h - (delta_h // 2)
+    left, right = delta_w // 2, delta_w - (delta_w // 2)
+    color = [255, 0, 0]
+    img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT,
+                            value=color)
+
+    return img
