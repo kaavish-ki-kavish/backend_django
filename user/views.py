@@ -8,15 +8,18 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
-from django.db.models import Max, Min
+from django.db.models import Q
+from django.utils import timezone
+from django.db.models import Sum, Count, Max, Min
 import os, datetime, random, copy
 
-from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise
+from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
+    ClusterFeature, Features, AttemptFeatures
 
 from rest_framework.response import Response
 from . import serializers
 from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
-    edit_child_profile, get_whole_stroke
+    edit_child_profile, push_file, get_whole_stroke
 
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
@@ -44,6 +47,10 @@ User = get_user_model()
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+
+def feature_model_pseudo(file_path):
+    return np.random.rand(1, 28)[0]
 
 
 class AuthViewSet(viewsets.GenericViewSet):
@@ -139,14 +146,8 @@ class AuthViewSet(viewsets.GenericViewSet):
         edit_child_profile(**serializer.validated_data, parent=request.user.pk)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    # def get_prediction(self, request):
-    #     r_m = RandomForestClassifier()
-    #     return JsonResponse(r_m,safe=False)
-    #     #return JsonResponse('prediction is'.format(r_m.compute_prediction(request.data)), safe=False)
-
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    def get_prediction(self, request):
+    def get_prediction_drawing(self, request):
         # pram = request.data.get('array_in',None)
         # r_m = RandomForestClassifier()
         # prediction = r_m.compute_prediction(pram)
@@ -169,25 +170,36 @@ class AuthViewSet(viewsets.GenericViewSet):
         }
         return Response(response)
 
-    # @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
-    # def generate_excercise_letter_series(self, response):
-    #     characters = ['alif', 'bay', 'pay']
-    #     attempt = 1
-    #     image_path = characters[0]+'.png'
-    #     return Response(image_path,status=status.HTTP_204_NO_CONTENT)
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def get_urdu_score(self, request):
 
-    # @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
-    # def generate_excercise_letter_series(self, response):
-    #     number_of_records = Characters.objects.count()
+        x = request.data.get('x', None)
+        y = request.data.get('y', None)
+        urdu_scorer = UrduCnnScorer(x, y)
+        score = urdu_scorer.get_score()
+        response = {
+            'message': 'Successful',
+            'prediction': score,
+        }
+        return Response(response)
+
+    @action(methods=["GET"], detail=False)
+    def get_random_exercise(self, request):
+        number_of_records = DrawingExercise.objects.count()
+        record_id = list(DrawingExercise.objects.all().aggregate(Min('drawing_id')).values())[0] + int(
+            random.random() * number_of_records) + 1
+        random_exercise = DrawingExercise.objects.get(pk=record_id)
+        serializer = serializers.DrawingExerciseSerializer
+        return Response(data=serializer(random_exercise).data, status=status.HTTP_204_NO_CONTENT)
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def save_stroke(self, request):
         x = request.data.get('x', None)
         y = request.data.get('y', None)
         stroke_name = request.data.get('s', None)
-
-        # f = open('/users/stroke.txt', 'w')
-        f = open(os.path.join(__location__, stroke_name + '.txt'), 'w')
+        profile_id_stroke = request.data.get('profile_id', None)
+        path = '/strokes' + stroke_name + '.txt'
+        f = open(os.path.join(__location__, path), 'w')
         f.write('x' + '\n')
         for x_cord in x:
             f.write(str(x_cord) + '\n')
@@ -196,45 +208,34 @@ class AuthViewSet(viewsets.GenericViewSet):
             f.write(str(y_cord) + '\n')
         f.close()
 
+        # stroke_session_id = Session.objects.filter(profile_id=profile_id_stroke)
+        stroke_session_id = Session.objects.values_list('session_id', flat=True).get(profile_id=profile_id_stroke)
+
         return Response(
-            data=serializers.HistorySerializer(
-                History.objects.all(), many=True).data,
-            status=status.HTTP_204_NO_CONTENT)
+            data=serializers.ColoringExerciseSerializer(ColoringExercise.objects.all(), many=True).data,
+            status=status.HTTP_204_NO_CONTENT
+        )
 
-    # @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    # def insert_data(self, request):
-    #     # a = ChildProfile.objects.get(profile_id=1)
-    #     # s = Session(session_id=1, profile_id=a, time_start=datetime.datetime.now(), time_end=datetime.datetime.now(),
-    #     #             token=1)
-    #     # s.save()
-    #
-    #     #
-    #     # h = History(attempt_id=1, session_id=Session.objects.get(session_id = 1), stroke_path='stroke.txt', time_taken=20, stroke_score=100,
-    #     #             similarity_score=50, datetime_attempt=datetime.datetime.now(), character_id=5, drawing_id=3,
-    #     #             coloring_id=6, object_id=6, is_completed=False)
-    #     # h.save()
-    #
-    #     # a = ChildProfile.objects.filter(user_id=request.user).only('profile_id')
-    #     # a = ChildProfile.objects.values.(profile_id)(user_id = request.user)
-    #     #
-    #     return Response(
-    #         data=serializers.DrawingExerciseSerializer(DrawingExercise.objects.all(), many=True).data,
-    #         status=status.HTTP_204_NO_CONTENT)
-
+    # Takes child profile id and gives queryset of generated drawing exercise
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    def get_urdu_score(self, request):
+    def generate_drawing_exercise(self, request):
+        profile_id_stroke = request.data.get('profile_id', None)
+        # return Response(
+        #     data=serializers.SessionSerializer(
+        #         Session.objects.filter(profile_id=(profile_id_stroke)), many=True).data,
+        #     status=status.HTTP_204_NO_CONTENT
+        # )
 
-        x = request.data.get('x', None)
-        y = request.data.get('y', None)
-        urdu_scorer = UrduCnnScorer(x, y)
-        score = urdu_scorer.get_score()
-        for _ in range(100):
-            print(score)
-        response = {
-            'message': 'Successful',
-            'prediction': score,
-        }
-        return Response(response)
+        profile_session_id = Session.objects.values_list('session_id', flat=True).filter(
+            profile_id=profile_id_stroke).latest('session_id')
+        profile_session_drawing_id = History.objects.values_list('drawing_id', flat=True).filter(
+            session_id=profile_session_id).latest('attempt_id')
+        # next exercise will be +1 of on which I am rn
+        return Response(
+            data=serializers.DrawingExerciseSerializer(
+                DrawingExercise.objects.filter(drawing_id=(profile_session_drawing_id + 1)), many=True).data,
+            status=status.HTTP_204_NO_CONTENT
+        )
     
     @action(methods=['POST'], detail=False)
     def get_score(self, request):
@@ -304,5 +305,407 @@ class AuthViewSet(viewsets.GenericViewSet):
             'message': msg,
             'prediction': np.mean(scores),
         }
-
         return Response(response)
+    
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def generate_character_exercise(self, request):
+        """
+        inputs: profile_id (child profile id), is_seq (1 / 0) : indicating if character will be generated in sequence or no.
+        sequence if alif, bay, pay,..
+        For non sequence
+        ML model return a vector of length 28 containing feature  scores. For these scores feature ids are found by:
+        character_id -> cluster_id -> feature_id.
+        attempt_feature table is populated where score = feature_score_vector[feature_id - 1], feature_id = id we found.
+        next exercise is generated by finding 3 feature_ids with least average score. A random feature_id among them is picked, the cluster to which the id belongs is
+        found and a random character from the cluster is given as next exercise.
+        """
+        # child profile_id to session session_id to History character_id to Character sequence_id
+
+        profile_id_stroke = request.data.get('profile_id', None)
+        is_seq = request.data.get('is_seq', None)
+        profile_session_id = Session.objects.values_list('session_id', flat=True).filter(
+            profile_id=profile_id_stroke).latest('session_id')
+        profile_session_character_id = History.objects.values_list('character_id', flat=True).filter(
+            session_id=profile_session_id).latest('character_id')
+
+        History_attempt_id = History.objects.filter(session_id=profile_session_id).latest('attempt_id')
+
+        if is_seq == 1:
+            character_sequence_id = Characters.objects.values_list('sequence_id', flat=True).filter(
+                character_id=profile_session_character_id).latest('sequence_id')
+
+            return Response(
+                data=serializers.CharactersSerializer(
+                    Characters.objects.filter(sequence_id=character_sequence_id + 1)[:1], many=True).data,
+                status=status.HTTP_204_NO_CONTENT
+            )
+        else:
+
+            feature_score_vector = feature_model_pseudo("pseudo_path")
+            character_cluster_id = Characters.objects.values_list('cluster_id', flat=True).filter(
+                character_id=profile_session_character_id).latest('cluster_id')
+
+            cluster_feature_id = list(
+                ClusterFeature.objects.filter(cluster_id=character_cluster_id).values_list('feature_id',
+                                                                                           flat=True))
+            ## populating attept_feature with feature ids and score
+
+            # for i in cluster_feature_id:
+            #     AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i), score=feature_score_vector[i - 1],
+            #                                    attempt_id=History_attempt_id)
+
+
+            # finding average score of feature_id
+            from django.db.models import Avg
+
+            feature_averages_queryset = (AttemptFeatures.objects.values('feature_id').annotate(avg=Avg('score')))
+            averages_lst = list(feature_averages_queryset.values_list('avg', flat=True))
+            feature_id_lst = list(feature_averages_queryset.values_list('feature_id', flat=True))
+            sorted_averages_list = sorted(averages_lst)
+            if len(sorted_averages_list) > 3:
+                sorted_averages_list = sorted_averages_list[:3]
+
+            #selecting random feature from min 3 avg score
+
+            features_min_score  = Features.objects.get(feature_id=feature_id_lst[averages_lst.index(random.choice(sorted_averages_list))])
+            cluster_feature_id = list(ClusterFeature.objects.filter(feature_id=features_min_score).values_list('cluster_id',flat=True))
+
+            #randomly choosing cluster
+            cluster_feature_id = random.choice(cluster_feature_id)
+            cluster_cluster_id = Clusters.objects.get(cluster_id = cluster_feature_id)
+            character_cluster = list(Characters.objects.filter(cluster_id=cluster_cluster_id).values_list('character_id',flat=True))
+
+            return Response(
+                data=serializers.CharactersSerializer(
+                    Characters.objects.filter(character_id = random.choice(character_cluster)), many=True).data,
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def time_on_exercise(self, request):
+
+        profile_id_child = request.data.get('profile_id', None)
+        days = request.data.get('days', None)
+        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+
+        graph_val_time_draw = []
+        graph_val_score_draw = []
+
+        graph_val_time_urdu = []
+        graph_val_score_urdu = []
+        for i in child_all_sessions:
+            # for each session_id getting  time taken
+
+            # DRAWING
+
+            # for each session_id getting time taken
+            date_time_ex_draw = History.objects.filter(session_id=i).filter(Q(drawing_id__isnull=False)).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+            ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
+
+            # for each session_id getting sum stroke score
+            date_score_ex_draw = History.objects.filter(session_id=i).filter(Q(drawing_id__isnull=False)).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+            ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
+
+            # URDU
+
+            date_time_ex_urdu = History.objects.filter(session_id=i).filter(
+                Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+            ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
+
+            # for each session_id getting sum stroke score
+            date_score_ex_urdu = History.objects.filter(session_id=i).filter(
+                Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+            ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
+
+            draw_dates = list(date_time_ex_draw.values_list('datetime_attempt', flat=True))
+            draw_time = list(date_time_ex_draw.values_list('data_sum', flat=True))
+            draw_score = list(date_score_ex_draw.values_list('data_sum', flat=True))
+
+            urdu_dates = list(date_time_ex_urdu.values_list('datetime_attempt', flat=True))
+            urdu_time = list(date_time_ex_urdu.values_list('data_sum', flat=True))
+            urdu_score = list(date_score_ex_urdu.values_list('data_sum', flat=True))
+
+            for j in range(len(draw_dates)):
+                # for draw
+                graph_val_time_draw.append((draw_dates[j].strftime("%d-%B-%Y %H:%M:%S"), draw_time[j]))
+                graph_val_score_draw.append((draw_dates[j].strftime("%d-%B-%Y %H:%M:%S"), draw_score[j]))
+
+                # for urdu
+                graph_val_time_urdu.append((urdu_dates[j].strftime("%d-%B-%Y %H:%M:%S"), urdu_time[j]))
+                graph_val_score_urdu.append((urdu_dates[j].strftime("%d-%B-%Y %H:%M:%S"), urdu_score[j]))
+
+        graph_val_time_draw.sort()
+        graph_val_score_draw.sort()
+
+        graph_val_time_urdu.sort()
+        graph_val_score_urdu.sort()
+
+        draw_dates = []
+        draw_time = []
+        draw_score = []
+        for i in range(len(graph_val_time_draw)):
+            draw_dates.append(graph_val_time_draw[i][0])
+            draw_time.append(graph_val_time_draw[i][1])
+            draw_score.append(graph_val_score_draw[i][1])
+
+        urdu_dates = []
+        urdu_time = []
+        urdu_score = []
+        for i in range(len(graph_val_time_urdu)):
+            urdu_dates.append(graph_val_time_urdu[i][0])
+            urdu_time.append(graph_val_time_urdu[i][1])
+            urdu_score.append(graph_val_score_urdu[i][1])
+
+        plt.plot(draw_dates, draw_time, label='Drawing')
+        plt.plot(urdu_dates, urdu_time, label='Urdu')
+
+        file_name = str(profile_id_child) + '.png'
+
+        plt.legend()
+        plt.title('Time Spent on Exercises')
+        plt.xlabel('date')
+        plt.ylabel('time spent')
+        plt.savefig(file_name)
+
+        push_file(file_name, "aangan-filesystem", 'time')
+
+        plt.clf()
+
+        plt.plot(draw_dates, draw_score, label='Drawing')
+        plt.plot(urdu_dates, urdu_score, label='Urdu')
+        plt.title('Feedback Scores')
+        plt.xlabel('date')
+        plt.ylabel('score')
+        plt.savefig('temp_score.png')
+
+        return Response(
+            data={'time_graph_path': 'temp.png',
+                  'score_graph_path': 'temp_score.png'},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def completion_exercise(self, request):
+        drawing_completion = 0
+        character_completion = 0
+        profile_id_child = request.data.get('profile_id', None)
+        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+        for i in child_all_sessions:
+            # drawing non null
+            drawing_completion += History.objects.filter(session_id=i).filter(
+                Q(drawing_id__isnull=False)).distinct().count()
+
+            # character, object non null
+            character_completion += History.objects.filter(session_id=i).filter(
+                Q(character_id__isnull=False) | Q(object_id__isnull=False)).distinct().count()
+
+        drawing_total = DrawingExercise.objects.all().count()
+        urdu_total = Characters.objects.all().count() + ObjectWord.objects.all().count()
+        return Response(
+            data={'drawing': int((drawing_completion * 100) / drawing_total),
+                  'character': int((character_completion * 100) / urdu_total)},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def time_last_n_days(self, request):
+
+        profile_id_child = request.data.get('profile_id', None)
+        days = request.data.get('days', None)
+        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+        time_taken_sum = 0
+
+        for i in child_all_sessions:
+            # for each session_id getting last 7 days and sum of time taken
+
+            date_time_query = History.objects.filter(session_id=i).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
+            time_taken_sum += sum(date_time_query.values_list('time_taken', flat=True))
+
+        return Response(
+            data={'time_taken_sum': time_taken_sum},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def average_time_exercise(self, request):
+        profile_id_child = request.data.get('profile_id', None)
+        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+        total_time_taken = 0
+        number_of_attempts = 0
+
+        for i in child_all_sessions:
+            filter_session = History.objects.filter(session_id=i)
+            total_time_taken += sum(filter_session.values_list('time_taken', flat=True))
+            number_of_attempts += filter_session.values('attempt_id').count()
+
+        if number_of_attempts == 0:
+            avg_time_taken = 0
+        else:
+            avg_time_taken = total_time_taken / number_of_attempts
+
+        return Response(
+            data={'avg_time_taken': int(avg_time_taken)},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def average_score_exercise(self, request):
+        profile_id_child = request.data.get('profile_id', None)
+        days = request.data.get('days', None)
+        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+        score_sum = []
+
+        for i in child_all_sessions:
+            # for each session_id getting last 7 days and sum of time taken
+
+            date_time_query = History.objects.filter(session_id=i).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
+            score_sum.append(sum(date_time_query.values_list('stroke_score', flat=True)))
+
+        print(score_sum)
+
+        if len(score_sum) == 0:
+            avg_score_sum = 0
+        else:
+            avg_score_sum = round((sum(score_sum) / len(score_sum)), 2) * 100
+
+        return Response(
+            data={'avg_score_sum': avg_score_sum},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def exercises_last_n_days(self, request):
+        profile_id_child = request.data.get('profile_id', None)
+        days = request.data.get('days', None)
+        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+        completed_exercises = 0
+
+        for i in child_all_sessions:
+            filter_session = History.objects.filter(session_id=i).filter(is_completed=True).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
+            completed_exercises += filter_session.values('character_id').distinct().count() + \
+                                   filter_session.values('object_id').distinct().count() + \
+                                   filter_session.values('drawing_id').distinct().count()
+
+        return Response(
+            data={'completed_exercises_sum': completed_exercises},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def exercise_review_character(self, request):
+        profile_id_child = request.data.get('profile_id', None)
+        to_display_no = request.data.get('to_display_no', None)
+        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+
+        urdu_letter = History.objects.none()
+        for i in child_all_sessions:
+            urdu_letter = urdu_letter | History.objects.filter(session_id=i).filter(Q(character_id__isnull=False))
+
+        lst_urdu_char = []
+        for i in urdu_letter:
+            lst_urdu_character_score = i.stroke_score
+            lst_urdu_character_datetime = i.datetime_attempt
+            lst_urdu_character_attempt = History.objects.filter(character_id=i.character_id).count()
+            lst_urdu_character_timetaken = i.time_taken
+            lst_urdu_character_image = \
+                Characters.objects.filter(character_id=i.character_id.character_id).values_list('ref_stroke_path',
+                                                                                                flat=True)[0]
+
+            lst_urdu_char.append((lst_urdu_character_datetime, lst_urdu_character_image, lst_urdu_character_score,
+                                  lst_urdu_character_timetaken, lst_urdu_character_attempt))
+
+            lst_urdu_char = sorted(lst_urdu_char, reverse=True)
+
+            if len(lst_urdu_char) > 0:
+                if to_display_no < len(lst_urdu_char):
+                    lst_urdu_char = lst_urdu_char[:to_display_no]
+
+        return Response(
+            data={'exercise_review': lst_urdu_char},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def exercise_review_object(self, request):
+        profile_id_child = request.data.get('profile_id', None)
+        to_display_no = request.data.get('to_display_no', None)
+        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+
+        urdu_object = History.objects.none()
+        for i in child_all_sessions:
+            urdu_object = urdu_object | History.objects.filter(session_id=i).filter(Q(object_id__isnull=False))
+
+        lst_urdu_object = []
+        for i in urdu_object:
+            lst_urdu_object_score = i.stroke_score
+            lst_urdu_object_datetime = i.datetime_attempt
+            lst_urdu_object_attempt = History.objects.filter(object_id=i.object_id).count()
+            lst_urdu_object_timetaken = i.time_taken
+            lst_urdu_object_image = \
+                ObjectWord.objects.filter(object_id=i.object_id.object_id).values_list('image_path', flat=True)[0]
+
+            lst_urdu_object.append((lst_urdu_object_datetime, lst_urdu_object_image, lst_urdu_object_score,
+                                    lst_urdu_object_timetaken, lst_urdu_object_attempt))
+
+            lst_urdu_char = sorted(lst_urdu_object, reverse=True)
+
+            if len(lst_urdu_char) > 0:
+                if to_display_no < len(lst_urdu_char):
+                    lst_urdu_object = lst_urdu_char[:to_display_no]
+
+        return Response(
+            data={'exercise_review': lst_urdu_object},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def exercise_review_drawing(self, request):
+        profile_id_child = request.data.get('profile_id', None)
+        to_display_no = request.data.get('to_display_no', None)
+        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+
+        drawing_ex = History.objects.none()
+        for i in child_all_sessions:
+            drawing_ex = drawing_ex | History.objects.filter(session_id=i).filter(Q(drawing_id__isnull=False))
+
+        lst_drawing_ex = []
+        for i in drawing_ex:
+            lst_drawing_ex_score = i.stroke_score
+            lst_drawing_ex_datetime = i.datetime_attempt
+            lst_drawing_ex_attempt = History.objects.filter(drawing_id=i.drawing_id).count()
+            lst_drawing_ex_timetaken = i.time_taken
+            lst_drawing_ex_image = \
+                DrawingExercise.objects.filter(drawing_id=i.drawing_id.drawing_id).values_list('ref_stroke_path',
+                                                                                               flat=True)[0]
+
+            lst_drawing_ex.append((lst_drawing_ex_datetime, lst_drawing_ex_image, lst_drawing_ex_score,
+                                   lst_drawing_ex_timetaken, lst_drawing_ex_attempt))
+
+            lst_drawing_ex = sorted(lst_drawing_ex, reverse=True)
+
+            if len(lst_drawing_ex) > 0:
+                if to_display_no < len(lst_drawing_ex):
+                    lst_drawing_ex = lst_drawing_ex[:to_display_no]
+
+        return Response(
+            data={'exercise_review': lst_drawing_ex},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
+    def check(self, request):
+        words = ['alif', 'bay', 'jeem']
+        cluster_id_lst = [1, 2, 3]
+        AttemptFeatures.objects.create(attempt_id=51, score=random.random(0, 1), feature_id=1)
+        return Response(
+            data=serializers.CharactersSerializer(
+                Characters.objects.filter(character_id=32), many=True).data,
+            status=status.HTTP_204_NO_CONTENT
+        )
