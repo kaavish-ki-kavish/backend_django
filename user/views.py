@@ -117,13 +117,13 @@ class AuthViewSet(viewsets.GenericViewSet):
         create_child_profile(request.user, **serializer.validated_data)
         return Response(
             data=serializers.ChildRegisterSerializer(ChildProfile.objects.filter(user_id=request.user), many=True).data,
-            status=status.HTTP_204_NO_CONTENT)
+            status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def get_all_child(self, request):
         return Response(
             data=serializers.ChildRegisterSerializer(ChildProfile.objects.filter(user_id=request.user), many=True).data,
-            status=status.HTTP_204_NO_CONTENT)
+            status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def delete_child(self, request):
