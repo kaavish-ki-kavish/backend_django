@@ -2,6 +2,7 @@ psycopg2
 gunicorn
 whitenoise
 numpy==1.19.2
+django-cors-headers
 opencv_python_headless==4.5.1.48
 matplotlib==3.3.2
 pandas==1.1.3
