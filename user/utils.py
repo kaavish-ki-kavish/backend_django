@@ -363,7 +363,7 @@ def make_image(x, y, penup):
     x_n, y_n = max(x), max(y)
     w = x_n - x_0 + 1
     h = y_n - y_0 + 1
-    padding = 10
+    padding = 60
     x_origin = [x_cord + padding // 2 - x_0 for x_cord in x]
     y_origin = [y_cord + padding // 2 - y_0 for y_cord in y]
     im = Image.new('RGB', (w + padding, h + padding), (0, 0, 0))
@@ -374,14 +374,14 @@ def make_image(x, y, penup):
         if (i + 1) not in penup:
             x_y.append((x_origin[i], y_origin[i]))
         else:
-            draw.line(x_y, fill=(255, 255, 255), width=7)
+            draw.line(x_y, fill=(255, 255, 255), width=10)
             x_y = []
 
-    draw.line(x_y, fill=(255, 255, 255), width=7)
+    draw.line(x_y, fill=(255, 255, 255), width=10)
 
     im = np.array(im)
     im =  cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-    ret, thresh1 = cv2.threshold(im, 127, 255, cv2.THRESH_BINARY_INV)
+    ret, thresh1 = cv2.threshold(im, 1, 255, cv2.THRESH_BINARY_INV)
     plt.imsave('perfect_image_drawing.png', thresh1)
     return thresh1
 
@@ -492,9 +492,14 @@ def drawing_cnn_model():
 def get_drawing_score_cnn(x,y, penup, label):
     img = make_image(x, y, penup)
     img = cv2.resize(img, (28, 28), cv2.INTER_AREA)
+    ret, img = cv2.threshold(img, 5, 255, cv2.THRESH_BINARY)
+    print(img.shape)
+    print(np.unique(img, return_counts=True))
+    plt.imsave('final_image.png', img)
     img = np.reshape(img, (1, 28, 28, 1))
     model_cnn = drawing_cnn_model()
     model_cnn.load_weights(os.path.join(__location__, 'drawing_model'))
+
     pred = model_cnn.predict(img)[0]
     print(pred)
     return pred[label]

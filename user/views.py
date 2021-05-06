@@ -234,7 +234,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             categories = ['circle', 'triangle', 'bird', 'square', 'axe', 'airplane', 'apple', 'banana', 'arm', 'car']
             if char in categories:
                 label = categories.index(char)
-                scores.append(get_mahalanobis_distance(whole_x, whole_y, penup, label))
+                #scores.append(get_mahalanobis_distance(whole_x, whole_y, penup, label))
                 scores.append(get_drawing_score_cnn(whole_x, whole_y, penup, label))
                 print(scores)
 
