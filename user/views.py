@@ -395,15 +395,16 @@ class AuthViewSet(viewsets.GenericViewSet):
         """
         generating random urdu word exercise
         """
-        number_of_records = ObjectWord.objects.count()
-        all_object_word = ObjectWord.objects.all()
-        record_id = list(all_object_word.aggregate(Min('object_id')).values())[0] + int(
-            random.random() * number_of_records)
-        if record_id < len(all_object_word):
-            record_id = record_id - 1
-        random_exercise = ObjectWord.objects.get(pk=record_id)
-        serializer = serializers.ObjectWordSerializer
-        return Response(data=serializer(random_exercise).data, status=status.HTTP_204_NO_CONTENT)
+
+        records = list(ObjectWord.objects.values_list('object_id',flat=True))
+        record_id = random.sample(records,4)
+
+        return Response(
+            data=serializers.ObjectWordSerializer(
+                ObjectWord.objects.filter(sQ(pk=record_id[0]) | Q(pk=record_id[1]) | Q(pk=record_id[2]) | Q(pk=record_id[3])), many=True).data,
+            status=status.HTTP_204_NO_CONTENT
+        )
+
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def time_score_completion__exercise(self, request):
@@ -760,7 +761,7 @@ class AuthViewSet(viewsets.GenericViewSet):
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def check(self, request):
         return Response(
-            data=serializers.CharactersSerializer(
-                Characters.objects.all(), many=True).data,
+            data=serializers.ObjectWordSerializer(
+                ObjectWord.objects.all(), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
