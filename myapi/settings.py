@@ -84,6 +84,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'myapi.wsgi.application'
 
+CORS_ORIGIN_ALLOW_ALL = True
+
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
