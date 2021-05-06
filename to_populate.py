@@ -86,7 +86,7 @@ def cluster_feature_to_db(cluster_file, feature_file):
 def characters_to_db():
     urdu_csv_file = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/urdu_file_dir.csv'
     cluster_csv_file = 'populate_scripts/cluster.csv'
-    # GLOBAL_PATH = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/'
+    GLOBAL_PATH = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/'
 
     clusters = {}
     clusters['alif'] = ['alif', 'alif-mad-aa']
@@ -140,6 +140,10 @@ def characters_to_db():
     urdu_data.rename(columns={'letter_image_path': 'ref_stroke_path', 'letter_sound_path': 'sound_path',
                               'object_image_path': 'ref_object_path'}, inplace=True)
 
+    urdu_data['ref_stroke_path'] = GLOBAL_PATH + urdu_data['ref_stroke_path']
+    urdu_data['sound_path'] = GLOBAL_PATH + urdu_data['sound_path']
+    urdu_data['ref_object_path'] = GLOBAL_PATH + urdu_data['ref_object_path']
+
     fields = ['label', 'ref_stroke_path', 'sound_path', 'ref_object_path', 'character_id', 'cluster_id', 'level', 'sequence_id']
     model = Characters
     kwargs = {'fields': fields, 'model': model}
@@ -148,15 +152,21 @@ def characters_to_db():
 
 
 def object_word_to_db():
+
     urdu_csv_file = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/urdu_file_dir.csv'
+    GLOBAL_PATH = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/'
     urdu_data = pd.read_csv(urdu_csv_file)
     urdu_data.drop(urdu_data[urdu_data['label'] == 'Hamza'].index, inplace=True)
-    urdu_data.drop(['letter_image_path', 'object_letter_image_path', ], axis=1, inplace=True)
+    urdu_data.drop(['letter_image_path', 'letter_sound_path', ], axis=1, inplace=True)
     urdu_data['is_object'] = False
     urdu_data['category'] = " "
 
     urdu_data.rename(columns={'object_image_path': 'image_path', 'object_sound_path': 'sound_path',
-                              '	object_letter_image_path': 'ref_image_path'}, inplace=True)
+                              'object_letter_image_path': 'ref_image_path'}, inplace=True)
+
+    urdu_data['image_path'] = GLOBAL_PATH + urdu_data['image_path']
+    urdu_data['sound_path'] = GLOBAL_PATH + urdu_data['sound_path']
+    urdu_data['ref_image_path'] = GLOBAL_PATH + urdu_data['ref_image_path']
 
     fields = ['label', 'image_path', 'sound_path', 'ref_image_path', 'is_object', 'category']
 

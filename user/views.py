@@ -759,9 +759,8 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def check(self, request):
-        ObjectWord.objects.all().delete()
         return Response(
-            data=serializers.ObjectWordSerializer(
-                ObjectWord.objects.all(), many=True).data,
+            data=serializers.CharactersSerializer(
+                Characters.objects.all(), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
