@@ -144,7 +144,7 @@ def characters_to_db():
     model = Characters
     kwargs = {'fields': fields, 'model': model}
     urdu_data.apply(upload_to_db, **kwargs, axis=1)
-    #print(f'Starting to upload {len(urdu_data.index)} records to Table... DONE.')
+    print(f'Starting to upload {len(urdu_data.index)} records to Table... DONE.')
 
 
 def object_word_to_db():
@@ -152,4 +152,15 @@ def object_word_to_db():
     urdu_data = pd.read_csv(urdu_csv_file)
     urdu_data.drop(urdu_data[urdu_data['label'] == 'Hamza'].index, inplace=True)
     urdu_data.drop(['letter_image_path', 'object_letter_image_path', ], axis=1, inplace=True)
+    urdu_data['is_object'] = False
+    urdu_data['category'] = " "
 
+    urdu_data.rename(columns={'object_image_path': 'image_path', 'object_sound_path': 'sound_path',
+                              '	object_letter_image_path': 'ref_image_path'}, inplace=True)
+
+    fields = ['label', 'image_path', 'sound_path', 'ref_image_path', 'is_object', 'category']
+
+    model = ObjectWord
+    kwargs = {'fields': fields, 'model': model}
+    urdu_data.apply(upload_to_db, **kwargs, axis=1)
+    print(f'Starting to upload {len(urdu_data.index)} records to Table... DONE.')
