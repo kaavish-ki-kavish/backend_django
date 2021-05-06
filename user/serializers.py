@@ -62,7 +62,7 @@ class ChildRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChildProfile
-        fields = ('name', 'dob', 'gender', 'level', 'profile_id')
+        fields = ('name', 'age', 'gender', 'level', 'profile_id')
 
 
 class DeleteChildSerializer(serializers.Serializer):
@@ -90,7 +90,7 @@ class EditChildSerializer(serializers.Serializer):
     level = serializers.ChoiceField(choices=level_choices)
     gender_choice = [('F', 'Female'), ('M', 'Male'), ('O', 'Other')]
     gender = serializers.ChoiceField(choices=gender_choice)
-    dob = serializers.DateField('Date of Birth')
+    age = serializers.IntegerField()
 
 
 # class DrawingExerciseSerializer(serializers.ModelSerializer):

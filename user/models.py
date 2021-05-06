@@ -25,7 +25,7 @@ class ChildProfile(models.Model):
     user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     creation_date = models.DateField(auto_now_add=True, null=True, blank=True)
     name = models.CharField(max_length=255)
-    dob = models.DateField('Date of Birth')
+    age = models.IntegerField(null=True)
     gender_choice = [('F', 'Female'), ('M', 'Male'), ('O', 'Other')]
     gender = models.CharField(max_length=255, choices=gender_choice)
     level_choices = [(0, 'Montessori'), (1, 'Nursury'), (2, 'Prep'), (3, 'other')]

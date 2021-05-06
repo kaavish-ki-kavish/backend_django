@@ -152,3 +152,4 @@ def object_word_to_db():
     urdu_data = pd.read_csv(urdu_csv_file)
     urdu_data.drop(urdu_data[urdu_data['label'] == 'Hamza'].index, inplace=True)
     urdu_data.drop(['letter_image_path', 'object_letter_image_path', ], axis=1, inplace=True)
+
