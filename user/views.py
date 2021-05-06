@@ -18,8 +18,8 @@ from .models import ChildProfile, Characters, Session, History, ObjectWord, Colo
 
 from rest_framework.response import Response
 from . import serializers
-from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile,edit_child_profile, push_file, push_image_file, get_whole_stroke
-
+from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
+    edit_child_profile, push_file, push_image_file, get_whole_stroke
 
 from django.http import JsonResponse
 from .classifier import RandomForestClassifier
@@ -243,7 +243,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                 DrawingExercise.objects.filter(drawing_id=(profile_session_drawing_id + 1)), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
-    
+
     @action(methods=['POST'], detail=False)
     def get_score(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -254,10 +254,10 @@ class AuthViewSet(viewsets.GenericViewSet):
         char = data['char']
 
         url = 'http://aangantf.herokuapp.com/api/auth/get_score'
-        
+
         msg = 'Successful'
-        
-        if data['exercise'] == 0: #drawing
+
+        if data['exercise'] == 0:  # drawing
             tf_data = {
                 'exercise': 0,
                 'char': char,
@@ -272,38 +272,38 @@ class AuthViewSet(viewsets.GenericViewSet):
             sys.stdout.flush()
             print(response.json()['scores'])
             sys.stdout.flush()
-            a = response.json()['scores'][0]#feature_scorer(img, p_features,s_features, verbose= 1)
-            b = response.json()['scores'][1] #perfect_scorer(whole_x, whole_y, penup, char)
+            a = response.json()['scores'][0]  # feature_scorer(img, p_features,s_features, verbose= 1)
+            b = response.json()['scores'][1]  # perfect_scorer(whole_x, whole_y, penup, char)
             scores.append(a)
             scores.append(b)
 
 
 
-        elif data['exercise'] == 1: #urdu letters
+        elif data['exercise'] == 1:  # urdu letters
             scorer = UrduCnnScorer(whole_x, whole_y, penup)
             label = scorer.NUM2LABEL.index(char)
             img = scorer.preprocessing()
             print(img.shape)
             scores.append(scorer.test_img(img)[0, label])
-                
+
             tf_data = {
                 'exercise': 1,
-                'char': char, 
-                'img': img.tolist(), 
-                'whole_x' : whole_x, 
-                'whole_y': whole_y, 
+                'char': char,
+                'img': img.tolist(),
+                'whole_x': whole_x,
+                'whole_y': whole_y,
                 'pen_up': list(penup)
             }
-        
-            response = requests.post(url, json=tf_data)       
+
+            response = requests.post(url, json=tf_data)
             print(response)
             print(type(response))
             sys.stdout.flush()
-            print(response.json()['scores']) 
+            print(response.json()['scores'])
             sys.stdout.flush()
-            #p_features, s_features = get_feature_vector(char)
-            a = response.json()['scores'][0]#feature_scorer(img, p_features,s_features, verbose= 1)
-            b = response.json()['scores'][1] #perfect_scorer(whole_x, whole_y, penup, char)
+            # p_features, s_features = get_feature_vector(char)
+            a = response.json()['scores'][0]  # feature_scorer(img, p_features,s_features, verbose= 1)
+            b = response.json()['scores'][1]  # perfect_scorer(whole_x, whole_y, penup, char)
             scores.append(a)
             scores.append(b)
 
@@ -313,7 +313,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             'prediction': np.mean(scores),
         }
         return Response(response)
-    
+
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def generate_character_exercise(self, request):
         """
@@ -389,7 +389,6 @@ class AuthViewSet(viewsets.GenericViewSet):
                     Characters.objects.filter(character_id=random.choice(character_cluster)), many=True).data,
                 status=status.HTTP_204_NO_CONTENT
             )
-
 
     @action(methods=["GET"], detail=False)
     def generate_urdu_word_exercise(self, request):
@@ -569,8 +568,6 @@ class AuthViewSet(viewsets.GenericViewSet):
                     'score_completion_path': dashboard_completion_graph_path},
                 status=status.HTTP_204_NO_CONTENT
             )
-
-
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def time_last_n_days(self, request):
