@@ -9,10 +9,11 @@ import os
 import torchvision
 from torchvision import datasets, transforms
 import cv2
-
+import base64
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
 
 def get_and_authenticate_user(request, email, password):
     user = authenticate(username=email, password=password)
@@ -54,47 +55,71 @@ def edit_child_profile(profile_id, name, dob, gender, level, parent):
     else:
         raise serializers.ValidationError("Parent does not have authorization to edit child")
 
+    # from git import Repo
+    #
+    # repo_dir = repo_name
+    # repo = Repo(repo_name)
+    # file_path = 'dashboard/' + git_folder + '/' + file_name
+    # file_list = [file_path]
+    # commit_message = 'committing' + file_name
+    # repo.index.add(file_list)
+    # repo.index.commit(commit_message)
+    # origin = repo.remote('origin')
+    # origin.push()
 
-def push_file(file_name, repo_name, git_folder):
-    # token = '76148974bd3158362e:5e3e72fe28d385c632g4d'
+
+import os
+
+__location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+
+def push_file(repo_name, git_folder_path, file_name):
+    token = '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'
     # p_token = ''.join([chr(ord(i) - 1) for i in token])
-    # g = Github(p_token)
-    # repo = None
-    #
-    # for repo in g.get_user().get_repos():
-    #     if repo.name == repo_name:
-    #         break
-    # if repo is None:
-    #     return
-    #
-    # # with open(file_name, 'r') as file:
-    # #     content = file.read
-    # from PIL import Image
-    # content = Image.open(file_name)
-    #
-    # # Output Images
-    # content.show()
-    #
-    #
-    # # Upload to github
-    # git_prefix = 'dashboard/'+git_folder + '/'
-    # git_file = git_prefix + file_name
-    # repo.create_file(git_file, f"committing {file_name}", content, branch="main")
-    # print(git_file + ' CREATED')
 
-    from git import Repo
+    g = Github(token)
+    repo = None
 
-    repo_dir = repo_name
-    repo = Repo(repo_name)
-    file_path = 'dashboard/' + git_folder + '/' + file_name
-    file_list = [file_path]
-    commit_message = 'committing' + file_name
-    repo.index.add(file_list)
-    repo.index.commit(commit_message)
-    origin = repo.remote('origin')
-    origin.push()
+    for repo in g.get_user().get_repos():
+        if repo.name == repo_name:
+            break
+    if repo is None:
+        return
 
-    
+    # git_prefix = git_folder_path
+    git_file = git_folder_path
+    file = open(os.path.join(__location__, git_file), 'r')
+    content = file.read()
+    file.close()
+
+    repo.create_file(git_file, f"committing {file_name}", content, branch="main")
+    print(git_file + ' CREATED')
+
+
+def push_image_file(git_folder_path, file_name):
+    repo_name = 'aangan-filesystem'
+    token = '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'
+    g = Github(token)
+    repo = None
+
+    for repo in g.get_user().get_repos():
+        if repo.name == repo_name:
+            break
+    if repo is None:
+        return
+
+    git_file = git_folder_path
+
+    with open(os.path.join(__location__, git_file), 'rb') as file:
+        content = file.read()
+    if file_name.endswith('.png'):
+        data = base64.b64encode(content)
+
+    repo.create_file(git_file, f"committing {file_name}", content, branch="main")
+    print(git_file + ' CREATED')
+
+
 def get_whole_stroke(drawing):
     whole_x = []
     whole_y = []
@@ -140,6 +165,6 @@ def crop_image(array):
     left, right = delta_w // 2, delta_w - (delta_w // 2)
     color = [255, 0, 0]
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT,
-                            value=color)
+                             value=color)
 
     return img

@@ -3,7 +3,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import serializers
 from django.contrib.auth.models import BaseUserManager
 from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
-     ClusterFeature, Features, AttemptFeatures
+    ClusterFeature, Features, AttemptFeatures, Dashoard
 
 User = get_user_model()
 
@@ -62,7 +62,7 @@ class ChildRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChildProfile
-        fields = ('name', 'dob', 'gender', 'level', 'profile_id')
+        fields = ('name', 'age', 'gender', 'level', 'profile_id')
 
 
 class DeleteChildSerializer(serializers.Serializer):
@@ -90,7 +90,7 @@ class EditChildSerializer(serializers.Serializer):
     level = serializers.ChoiceField(choices=level_choices)
     gender_choice = [('F', 'Female'), ('M', 'Male'), ('O', 'Other')]
     gender = serializers.ChoiceField(choices=gender_choice)
-    dob = serializers.DateField('Date of Birth')
+    age = serializers.IntegerField()
 
 
 # class DrawingExerciseSerializer(serializers.ModelSerializer):
@@ -117,7 +117,8 @@ class HistorySerializer(serializers.ModelSerializer):
 class CharactersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Characters
-        fields = ('character_id', 'level', 'ref_stroke_path', 'ref_object_path', 'label', 'sound_path', 'sequence_id','cluster_id')
+        fields = ('character_id', 'level', 'ref_stroke_path', 'ref_object_path', 'label', 'sound_path', 'sequence_id',
+                  'cluster_id')
 
 
 class ObjectWordSerializer(serializers.ModelSerializer):
@@ -137,10 +138,12 @@ class ColoringExerciseSerializer(serializers.ModelSerializer):
         model = ColoringExercise
         fields = ('coloring_id', 'ref_image_path', 'level', 'sound_path', 'label')
 
+
 class ClustersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clusters
         fields = ('cluster_id', 'cluster_name')
+
 
 # class ClustersCharacterSerializer(serializers.ModelSerializer):
 #     class Meta:
@@ -158,16 +161,23 @@ class ClusterFeatureSerializer(serializers.ModelSerializer):
         model = ClusterFeature
         fields = ('cluster_feature_id', 'cluster_id', 'feature_id')
 
+
 class AttemptFeaturesSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttemptFeatures
         fields = ('attempt_id', 'attempt_feature_id', 'feature_id', 'score')
 
+
+class DashboardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Dashoard
+        fields = ('dashboard_id', 'time_path', 'score_path', 'completion_path', 'profile_id')
+
+
 class DataEntrySerializer(serializers.Serializer):
-    char = serializers.CharField(max_length= 255, required= True)
+    char = serializers.CharField(max_length=255, required=True)
     data = serializers.ListField(
         child=serializers.ListField(
-            child = serializers.ListField(
-            child= serializers.IntegerField())))
+            child=serializers.ListField(
+                child=serializers.IntegerField())))
     exercise = serializers.IntegerField()
-
