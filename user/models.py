@@ -45,9 +45,11 @@ class Session(models.Model):
     def __str__(self):
         return f'{self.session_id} - by {self.profile_id} - on {self.time_start}'
 
+
 class Clusters(models.Model):
     cluster_id = models.AutoField(primary_key=True)
     cluster_name = models.CharField(max_length=255, null=False)
+
 
 class Characters(models.Model):
     character_id = models.IntegerField(null=False, blank=False)
@@ -105,7 +107,6 @@ class History(models.Model):
     is_completed = models.BooleanField()
 
 
-
 class Features(models.Model):
     feature_id = models.AutoField(primary_key=True)
     feature_name = models.CharField(max_length=255, null=False)
@@ -116,11 +117,13 @@ class ClusterFeature(models.Model):
     feature_id = models.ForeignKey(Features, on_delete=models.CASCADE)
     cluster_id = models.ForeignKey(Clusters, on_delete=models.CASCADE)
 
+
 class AttemptFeatures(models.Model):
     attempt_feature_id = models.AutoField(primary_key=True)
     feature_id = models.ForeignKey(Features, on_delete=models.CASCADE)
     attempt_id = models.ForeignKey(History, on_delete=models.CASCADE)
     score = models.FloatField(null=False)
+
 
 class Dashoard(models.Model):
     dashboard_id = models.AutoField(primary_key=True)
