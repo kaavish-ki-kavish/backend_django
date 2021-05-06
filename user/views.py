@@ -235,7 +235,9 @@ class AuthViewSet(viewsets.GenericViewSet):
             if char in categories:
                 label = categories.index(char)
                 #scores.append(get_mahalanobis_distance(whole_x, whole_y, penup, label))
-                scores.append(get_drawing_score_cnn(whole_x, whole_y, penup, label))
+                score = get_drawing_score_cnn(whole_x, whole_y, penup, label)
+                scores.append(score)
+                scores.append(score)
                 print(scores)
 
             else:
