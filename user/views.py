@@ -401,7 +401,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data=serializers.ObjectWordSerializer(
-                ObjectWord.objects.filter(sQ(pk=record_id[0]) | Q(pk=record_id[1]) | Q(pk=record_id[2]) | Q(pk=record_id[3])), many=True).data,
+                ObjectWord.objects.filter(Q(pk=record_id[0]) | Q(pk=record_id[1]) | Q(pk=record_id[2]) | Q(pk=record_id[3])), many=True).data,
             status=status.HTTP_200_OK
         )
 
