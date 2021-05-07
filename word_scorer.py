@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Flatten
 from tensorflow.keras.layers import Conv2D, MaxPooling2D
-from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D
 from tensorflow.keras import backend as K
 from tensorflow.keras.utils import to_categorical
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
