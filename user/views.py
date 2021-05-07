@@ -31,6 +31,8 @@ import cv2 as cv
 # from .apps import PredictorConfig
 # from django.http import JsonResponse
 # from rest_framework.views import APIView
+from char_regression import get_char_score
+from .urduCNN import UrduCnnScorer
 
 User = get_user_model()
 
@@ -243,13 +245,19 @@ class AuthViewSet(viewsets.GenericViewSet):
             else:
                 scores = [-1]
 
-        elif data['exercise'] == 1:  # urdu letters
-            print('here0')
+
+        elif data['exercise'] == 1: #urdu letters
+            scorer = UrduCnnScorer(whole_x, whole_y, penup)
+            label = scorer.NUM2LABEL.index(char)
+            img = scorer.preprocessing()
+
             p_features, s_features = get_feature_vector(char)
             print('here1')
             scores.append(feature_scorer(img, p_features, s_features, verbose=1))
-            print('here2')
-            scores.append(perfect_scorer(whole_x, whole_y, penup, char))
+            #print('here2')
+            #scores.append(perfect_scorer(whole_x, whole_y, penup, char))
+            scores.append(get_char_score(data['data'], char))
+            print(scores)
 
         response = {
             'scores': scores,
