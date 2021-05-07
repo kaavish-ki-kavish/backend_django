@@ -489,17 +489,25 @@ def drawing_cnn_model():
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
+# correct solution:
+def softmax(x):
+    """Compute softmax values for each sets of scores in x."""
+    return x / x.sum()
+
 def get_drawing_score_cnn(x,y, penup, label):
     img = make_image(x, y, penup)
     img = cv2.resize(img, (28, 28), cv2.INTER_AREA)
-    ret, img = cv2.threshold(img, 5, 255, cv2.THRESH_BINARY)
+    #ret, img = cv2.threshold(img, 5, 255, cv2.THRESH_BINARY)
     print(img.shape)
     print(np.unique(img, return_counts=True))
     plt.imsave('final_image.png', img)
-    img = np.reshape(img, (1, 28, 28, 1))
+    img = np.reshape(img, (1, 28, 28, 1)) / 255
+    print(np.unique(img, return_counts=True))
+
     model_cnn = drawing_cnn_model()
     model_cnn.load_weights(os.path.join(__location__, 'drawing_model'))
 
     pred = model_cnn.predict(img)[0]
     print(pred)
-    return pred[label]
+    print(softmax(pred[:10]))
+    return softmax(pred[:10])[label]
