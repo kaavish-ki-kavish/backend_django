@@ -357,9 +357,9 @@ class AuthViewSet(viewsets.GenericViewSet):
                                                                                            flat=True))
             ## populating attept_feature with feature ids and score
 
-            # for i in cluster_feature_id:
-            #     AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i), score=feature_score_vector[i - 1],
-            #                                    attempt_id=History_attempt_id)
+            for i in cluster_feature_id:
+                AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i), score=feature_score_vector[i - 1],
+                                               attempt_id=History_attempt_id)
 
             # finding average score of feature_id
             from django.db.models import Avg
@@ -401,7 +401,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data=serializers.ObjectWordSerializer(
-                ObjectWord.objects.filter(sQ(pk=record_id[0]) | Q(pk=record_id[1]) | Q(pk=record_id[2]) | Q(pk=record_id[3])), many=True).data,
+                ObjectWord.objects.filter(Q(pk=record_id[0]) | Q(pk=record_id[1]) | Q(pk=record_id[2]) | Q(pk=record_id[3])), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
 
@@ -761,7 +761,80 @@ class AuthViewSet(viewsets.GenericViewSet):
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def check(self, request):
         return Response(
-            data=serializers.ObjectWordSerializer(
-                ObjectWord.objects.all(), many=True).data,
+            data=serializers.DrawingExerciseSerializer(
+                DrawingExercise.objects.all(), many=True).data,
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    #THIS FUNCTION WAS ONLY FOR ME TO TOO AND SEE  DATA SO PLEASE DON'T USE IT
+    @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
+    def insert_data(self, request):
+        from django.utils import timezone
+        words = ['alif', 'ttaa', 'paa', 'seey', 'baa', 'taa', 'daal', 'zaal', 'dhaal', 'seen', 'sheen', 'zwaad',
+                 'swaad']
+
+
+        from django.utils import timezone
+        import string
+
+        for i in range(1,10):
+
+            s = Session(
+                session_id=i,
+                profile_id=ChildProfile.objects.get(profile_id=1),
+                time_start=timezone.now(),
+                time_end=timezone.now() + datetime.timedelta(seconds=random.randint(0, 86400)),
+                token=''.join(random.choices(string.ascii_lowercase, k=5))
+            )
+            s.save()
+
+        for i in range(1,10):
+            His = History(session_id=Session.objects.get(session_id=i),
+                          stroke_score=random.random(),
+                          stroke_path='/strokes/' + words[i] + '.txt',
+                          time_taken=random.randint(1, 100),
+                          datetime_attempt=timezone.now(),
+                          similarity_score=random.random(),
+                          character_id=Characters.objects.get(character_id=i),
+                          coloring_id=None,
+                          object_id=None,
+                          is_completed=True,
+                          drawing_id=None
+                          )
+            His.save()
+
+        for i in range(1,10):
+            His = History(session_id=Session.objects.get(session_id=i),
+                          stroke_score=random.random(),
+                          stroke_path='/strokes/' + words[i] + '.txt',
+                          time_taken=random.randint(1, 100),
+                          datetime_attempt=timezone.now(),
+                          similarity_score=random.random(),
+                          character_id=None,
+                          coloring_id=None,
+                          object_id=ObjectWord.objects.get(object_id=i),
+                          is_completed=True,
+                          drawing_id=None
+                          )
+            His.save()
+
+        for i in range(1,10):
+            His = History(session_id=Session.objects.get(session_id=i),
+                          stroke_score=random.random(),
+                          stroke_path='/strokes/' + words[i] + '.txt',
+                          time_taken=random.randint(1, 100),
+                          datetime_attempt=timezone.now(),
+                          similarity_score=random.random(),
+                          character_id=None,
+                          coloring_id=None,
+                          object_id=None,
+                          is_completed=True,
+                          drawing_id=DrawingExercise.objects.get(drawing_id=i)
+                          )
+            His.save()
+
+        return Response(
+            data=serializers.HistorySerializer(
+                History.objects.all(), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
