@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Flatten
 from tensorflow.keras.layers import Conv2D, MaxPooling2D
-from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D
 from tensorflow.keras import backend as K
 from tensorflow.keras.utils import to_categorical
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
@@ -782,7 +782,7 @@ def get_words_score(data, chars):
             mal2 = distance.mahalanobis(u=np.nan_to_num(test_X[i]), v=v, VI=cov)
 
             #test scores load
-            test_scores = np.load(os.path.join(__location__, 'Words_scores.npy'))
+            test_scores = np.load(os.path.join(__location__, 'words_scores.npy'))
             select = test_scores[:, 0] == char
             select_scores = test_scores[select]
             scores = select_scores[:, 1]
