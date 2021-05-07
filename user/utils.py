@@ -34,8 +34,8 @@ def create_user_account(email, password, first_name="",
     return user
 
 
-def create_child_profile(parent_id, name, dob, gender, level, **extra_fields):
-    child = ChildProfile(user_id=parent_id, name=name, dob=dob, gender=gender, level=level)
+def create_child_profile(parent_id, name, age, gender, level, **extra_fields):
+    child = ChildProfile(user_id=parent_id, name=name, age=age, gender=gender, level=level)
     child.save()
     return child
 
