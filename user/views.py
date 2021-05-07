@@ -38,7 +38,7 @@ import torch.nn as nn
 # from .apps import PredictorConfig
 # from django.http import JsonResponse
 # from rest_framework.views import APIView
-
+from char_regression import get_char_score
 User = get_user_model()
 
 __location__ = os.path.realpath(
@@ -261,11 +261,13 @@ class AuthViewSet(viewsets.GenericViewSet):
             label = scorer.NUM2LABEL.index(char)
             img = scorer.preprocessing()
 
-            scores.append(scorer.test_img(img)[0, label])
+            #scores.append(scorer.test_img(img)[0, label])
 
             p_features, s_features = get_feature_vector(char)
             scores.append(feature_scorer(img, p_features,s_features, verbose= 1))
-            scores.append(perfect_scorer(whole_x, whole_y, penup, char))
+            #scores.append(perfect_scorer(whole_x, whole_y, penup, char))
+            scores.append(get_char_score(data['data'], char))
+            print(scores)
 
         response = {
             'message': 'Successful',
