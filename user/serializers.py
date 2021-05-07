@@ -160,4 +160,8 @@ class DataEntrySerializerTf(serializers.Serializer):
     pen_up = serializers.ListField(
                 child= serializers.IntegerField()
             )
+    data = serializers.ListField(
+        child=serializers.ListField(
+            child = serializers.ListField(
+            child= serializers.IntegerField())))
     exercise = serializers.IntegerField()
