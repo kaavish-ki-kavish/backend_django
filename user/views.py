@@ -264,7 +264,8 @@ class AuthViewSet(viewsets.GenericViewSet):
                 'img': [[0, 0]],
                 'whole_x': whole_x,
                 'whole_y': whole_y,
-                'pen_up': list(penup)
+                'pen_up': list(penup),
+                'data': data['data']
             }
             response = requests.post(url, json=tf_data)
             print(response)
@@ -284,7 +285,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             label = scorer.NUM2LABEL.index(char)
             img = scorer.preprocessing()
             print(img.shape)
-            scores.append(scorer.test_img(img)[0, label])
+            # scores.append(scorer.test_img(img)[0, label])
 
             tf_data = {
                 'exercise': 1,
@@ -292,7 +293,8 @@ class AuthViewSet(viewsets.GenericViewSet):
                 'img': img.tolist(),
                 'whole_x': whole_x,
                 'whole_y': whole_y,
-                'pen_up': list(penup)
+                'pen_up': list(penup),
+                'data': data['data']
             }
 
             response = requests.post(url, json=tf_data)
@@ -306,7 +308,23 @@ class AuthViewSet(viewsets.GenericViewSet):
             b = response.json()['scores'][1]  # perfect_scorer(whole_x, whole_y, penup, char)
             scores.append(a)
             scores.append(b)
+        elif data['exercise'] == 2:
+            
+            tf_data = {
+                'exercise': 2,
+                'char': char,
+                'img': np.zeros((28, 28)).tolist(),
+                'whole_x': whole_x,
+                'whole_y': whole_y,
+                'pen_up': list(penup),
+                'data': data['data']
+            }
 
+            response = requests.post(url, json=tf_data)
+            a = response.json()['scores'][0]
+            scores.append(a)
+
+            
         print(scores)
         response = {
             'message': msg,
