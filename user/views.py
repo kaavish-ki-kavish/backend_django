@@ -32,7 +32,10 @@ import cv2 as cv
 # from django.http import JsonResponse
 # from rest_framework.views import APIView
 from char_regression import get_char_score
+
 from .urduCNN import UrduCnnScorer
+
+from word_scorer import get_words_score
 
 User = get_user_model()
 
@@ -258,6 +261,10 @@ class AuthViewSet(viewsets.GenericViewSet):
             #scores.append(perfect_scorer(whole_x, whole_y, penup, char))
             scores.append(get_char_score(data['data'], char))
             print(scores)
+
+        elif data['exercise'] == 2:
+            score = get_words_score(data['data'], char)
+            scores.append(score)
 
         response = {
             'scores': scores,
