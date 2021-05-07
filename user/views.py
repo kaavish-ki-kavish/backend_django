@@ -33,7 +33,7 @@ import cv2 as cv
 # from rest_framework.views import APIView
 from char_regression import get_char_score
 
-from .urduCNN import UrduCnnScorer
+# from .urduCNN import UrduCnnScorer
 
 from word_scorer import get_words_score
 
@@ -250,9 +250,9 @@ class AuthViewSet(viewsets.GenericViewSet):
 
 
         elif data['exercise'] == 1: #urdu letters
-            scorer = UrduCnnScorer(whole_x, whole_y, penup)
-            label = scorer.NUM2LABEL.index(char)
-            img = scorer.preprocessing()
+            # scorer = UrduCnnScorer(whole_x, whole_y, penup)
+            # label = scorer.NUM2LABEL.index(char)
+            # img = scorer.preprocessing()
 
             p_features, s_features = get_feature_vector(char)
             print('here1')
