@@ -782,7 +782,7 @@ def get_words_score(data, chars):
             mal2 = distance.mahalanobis(u=np.nan_to_num(test_X[i]), v=v, VI=cov)
 
             #test scores load
-            test_scores = np.load(os.path.join(__location__, 'Words_scores.npy'))
+            test_scores = np.load(os.path.join(__location__, 'words_scores.npy'))
             select = test_scores[:, 0] == char
             select_scores = test_scores[select]
             scores = select_scores[:, 1]
