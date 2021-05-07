@@ -137,7 +137,7 @@ class AuthViewSet(viewsets.GenericViewSet):
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def get_most_recent_child(self, request):
         return Response(data=serializers.ChildRegisterSerializer(
-            ChildProfile.objects.filter(user_id=request.user).all().last()).data, status=status.HTTP_204_NO_CONTENT)
+            ChildProfile.objects.filter(user_id=request.user).all().last()).data, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def edit_child(self, request):
@@ -190,7 +190,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             random.random() * number_of_records) + 1
         random_exercise = DrawingExercise.objects.get(pk=record_id)
         serializer = serializers.DrawingExerciseSerializer
-        return Response(data=serializer(random_exercise).data, status=status.HTTP_204_NO_CONTENT)
+        return Response(data=serializer(random_exercise).data, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def save_stroke(self, request):
@@ -220,7 +220,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(
             data={
                 'stroke_path': 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/strokes/' + stroke_name},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     # Takes child profile id and gives queryset of generated drawing exercise
@@ -241,7 +241,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(
             data=serializers.DrawingExerciseSerializer(
                 DrawingExercise.objects.filter(drawing_id=(profile_session_drawing_id + 1)), many=True).data,
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False)
@@ -387,7 +387,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             return Response(
                 data=serializers.CharactersSerializer(
                     Characters.objects.filter(character_id=random.choice(character_cluster)), many=True).data,
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_200_OK
             )
 
     @action(methods=["GET"], detail=False)
@@ -402,7 +402,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(
             data=serializers.ObjectWordSerializer(
                 ObjectWord.objects.filter(sQ(pk=record_id[0]) | Q(pk=record_id[1]) | Q(pk=record_id[2]) | Q(pk=record_id[3])), many=True).data,
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
 
@@ -567,7 +567,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                     'time_graph_path': dashboard_time_graph_path,
                     'score_graph_path': dashboard_score_graph_path,
                     'score_completion_path': dashboard_completion_graph_path},
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_200_OK
             )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -587,7 +587,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'time_taken_sum': time_taken_sum},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -609,7 +609,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'avg_time_taken': int(avg_time_taken)},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -635,7 +635,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'avg_score_sum': avg_score_sum},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -654,7 +654,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'completed_exercises_sum': completed_exercises},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -688,7 +688,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'exercise_review': lst_urdu_char},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -721,7 +721,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'exercise_review': lst_urdu_object},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -755,7 +755,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'exercise_review': lst_drawing_ex},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
