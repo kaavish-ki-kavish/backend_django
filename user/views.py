@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.db.models import Sum, Count, Max, Min
 import os, datetime, random, copy
 
-from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
+from .models import ChildProfile, Characters, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
     ClusterFeature, Features, AttemptFeatures, Dashoard
 
 from rest_framework.response import Response
@@ -358,7 +358,8 @@ class AuthViewSet(viewsets.GenericViewSet):
             ## populating attept_feature with feature ids and score
 
             for i in cluster_feature_id:
-                AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i), score=feature_score_vector[i - 1],
+                AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i),
+                                               score=feature_score_vector[i - 1],
                                                attempt_id=History_attempt_id)
 
             # finding average score of feature_id
@@ -396,15 +397,15 @@ class AuthViewSet(viewsets.GenericViewSet):
         generating random urdu word exercise
         """
 
-        records = list(ObjectWord.objects.values_list('object_id',flat=True))
-        record_id = random.sample(records,4)
+        records = list(ObjectWord.objects.values_list('object_id', flat=True))
+        record_id = random.sample(records, 4)
 
         return Response(
             data=serializers.ObjectWordSerializer(
-                ObjectWord.objects.filter(Q(pk=record_id[0]) | Q(pk=record_id[1]) | Q(pk=record_id[2]) | Q(pk=record_id[3])), many=True).data,
+                ObjectWord.objects.filter(
+                    Q(pk=record_id[0]) | Q(pk=record_id[1]) | Q(pk=record_id[2]) | Q(pk=record_id[3])), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
-
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def time_score_completion__exercise(self, request):
@@ -416,7 +417,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         """
         profile_id_child = request.data.get('profile_id', None)
         days = request.data.get('days', None)
-        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+        # child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
         latest_attempt_id = History.objects.values_list('attempt_id', flat=True).latest('attempt_id')
         file_name = str(profile_id_child) + '_' + str(latest_attempt_id) + '.png'
 
@@ -442,57 +443,59 @@ class AuthViewSet(viewsets.GenericViewSet):
 
             drawing_completion = 0
             urdu_completion = 0
-            for i in child_all_sessions:
-                drawing_completion += History.objects.filter(session_id=i).filter(
-                    Q(drawing_id__isnull=False)).distinct().count()
 
-                # character, object non null
-                urdu_completion += History.objects.filter(session_id=i).filter(
-                    Q(character_id__isnull=False) | Q(object_id__isnull=False)).distinct().count()
+            drawing_completion = History.objects.filter(profile_id=profile_id_child).filter(
+                Q(drawing_id__isnull=False)).distinct().count()
 
-                # for each session_id getting  time taken
+            # character, object non null
+            urdu_completion = History.objects.filter(profile_id=profile_id_child).filter(
+                Q(character_id__isnull=False) | Q(object_id__isnull=False)).distinct().count()
 
-                # DRAWING
+            # for each session_id getting  time taken
 
-                # for each session_id getting time taken
-                date_time_ex_draw = History.objects.filter(session_id=i).filter(Q(drawing_id__isnull=False)).filter(
-                    datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
-                ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
+            # DRAWING
 
-                # for each session_id getting sum stroke score
-                date_score_ex_draw = History.objects.filter(session_id=i).filter(Q(drawing_id__isnull=False)).filter(
-                    datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
-                ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
+            # for each session_id getting time taken
+            date_time_ex_draw = History.objects.filter(profile_id=profile_id_child).filter(
+                Q(drawing_id__isnull=False)).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+            ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
 
-                # URDU
+            # for each session_id getting sum stroke score
+            date_score_ex_draw = History.objects.filter(profile_id=profile_id_child).filter(
+                Q(drawing_id__isnull=False)).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+            ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
 
-                date_time_ex_urdu = History.objects.filter(session_id=i).filter(
-                    Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
-                    datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
-                ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
+            # URDU
 
-                # for each session_id getting sum stroke score
-                date_score_ex_urdu = History.objects.filter(session_id=i).filter(
-                    Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
-                    datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
-                ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
+            date_time_ex_urdu = History.objects.filter(profile_id=profile_id_child).filter(
+                Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+            ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
 
-                draw_dates = list(date_time_ex_draw.values_list('datetime_attempt', flat=True))
-                draw_time = list(date_time_ex_draw.values_list('data_sum', flat=True))
-                draw_score = list(date_score_ex_draw.values_list('data_sum', flat=True))
+            # for each session_id getting sum stroke score
+            date_score_ex_urdu = History.objects.filter(profile_id=profile_id_child).filter(
+                Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
+                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
+            ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
 
-                urdu_dates = list(date_time_ex_urdu.values_list('datetime_attempt', flat=True))
-                urdu_time = list(date_time_ex_urdu.values_list('data_sum', flat=True))
-                urdu_score = list(date_score_ex_urdu.values_list('data_sum', flat=True))
+            draw_dates = list(date_time_ex_draw.values_list('datetime_attempt', flat=True))
+            draw_time = list(date_time_ex_draw.values_list('data_sum', flat=True))
+            draw_score = list(date_score_ex_draw.values_list('data_sum', flat=True))
 
-                for j in range(len(draw_dates)):
-                    # for draw
-                    graph_val_time_draw.append((draw_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), draw_time[j]))
-                    graph_val_score_draw.append((draw_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), draw_score[j]))
+            urdu_dates = list(date_time_ex_urdu.values_list('datetime_attempt', flat=True))
+            urdu_time = list(date_time_ex_urdu.values_list('data_sum', flat=True))
+            urdu_score = list(date_score_ex_urdu.values_list('data_sum', flat=True))
 
-                    # for urdu
-                    graph_val_time_urdu.append((urdu_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), urdu_time[j]))
-                    graph_val_score_urdu.append((urdu_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), urdu_score[j]))
+            for j in range(len(draw_dates)):
+                # for draw
+                graph_val_time_draw.append((draw_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), draw_time[j]))
+                graph_val_score_draw.append((draw_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), draw_score[j]))
+
+                # for urdu
+                graph_val_time_urdu.append((urdu_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), urdu_time[j]))
+                graph_val_score_urdu.append((urdu_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), urdu_score[j]))
 
             graph_val_time_draw.sort()
             graph_val_score_draw.sort()
@@ -518,6 +521,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
             plt.plot(draw_dates, draw_time, label='Drawing')
             plt.plot(urdu_dates, urdu_time, label='Urdu')
+
             plt.legend()
             plt.title('Time Spent on Exercises')
             plt.xlabel('date')
@@ -572,18 +576,18 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def time_last_n_days(self, request):
-
+        '''
+        takes profile_id and days (number of days) s input and gives time in minutes spent. deafult days is 7
+        '''
         profile_id_child = request.data.get('profile_id', None)
-        days = request.data.get('days', None)
-        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+        days = request.data.get('days', 7)
         time_taken_sum = 0
 
-        for i in child_all_sessions:
-            # for each session_id getting last 7 days and sum of time taken
+        # for each session_id getting last 7 days and sum of time taken
 
-            date_time_query = History.objects.filter(session_id=i).filter(
-                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
-            time_taken_sum += sum(date_time_query.values_list('time_taken', flat=True))
+        date_time_query = History.objects.filter(profile_id=profile_id_child).filter(
+            datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
+        time_taken_sum += sum(date_time_query.values_list('time_taken', flat=True))
 
         return Response(
             data={'time_taken_sum': time_taken_sum},
@@ -592,15 +596,16 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def average_time_exercise(self, request):
+        '''
+        takes profile_id as input and gives time spent on average per exercise
+        '''
         profile_id_child = request.data.get('profile_id', None)
-        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
         total_time_taken = 0
         number_of_attempts = 0
 
-        for i in child_all_sessions:
-            filter_session = History.objects.filter(session_id=i)
-            total_time_taken += sum(filter_session.values_list('time_taken', flat=True))
-            number_of_attempts += filter_session.values('attempt_id').count()
+        filter_session = History.objects.filter(profile_id=profile_id_child)
+        total_time_taken += sum(filter_session.values_list('time_taken', flat=True))
+        number_of_attempts += filter_session.values('attempt_id').count()
 
         if number_of_attempts == 0:
             avg_time_taken = 0
@@ -614,24 +619,24 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def average_score_exercise(self, request):
+        '''
+        takes profile_id and days (number of days we are averaging) as input and gives time spent on average per exercise.
+        Default number of days is 7.
+        '''
         profile_id_child = request.data.get('profile_id', None)
-        days = request.data.get('days', None)
-        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
-        score_sum = []
+        days = request.data.get('days', 7)
+        score_sum = 0
 
-        for i in child_all_sessions:
-            # for each session_id getting last 7 days and sum of time taken
+        # for each session_id getting last days and sum of time taken
 
-            date_time_query = History.objects.filter(session_id=i).filter(
-                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
-            score_sum.append(sum(date_time_query.values_list('stroke_score', flat=True)))
+        date_time_query = History.objects.filter(profile_id=profile_id_child).filter(
+            datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
+        score_sum = sum(date_time_query.values_list('stroke_score', flat=True))
 
-        print(score_sum)
-
-        if len(score_sum) == 0:
+        if score_sum == 0:
             avg_score_sum = 0
         else:
-            avg_score_sum = round((sum(score_sum) / len(score_sum)), 2) * 100
+            avg_score_sum = round((score_sum / days), 2) * 100
 
         return Response(
             data={'avg_score_sum': avg_score_sum},
@@ -640,17 +645,17 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def exercises_last_n_days(self, request):
+        '''
+        takes profile_id and number of days as input and gives exercises completed in last n days. Default number of days is 7.
+        '''
         profile_id_child = request.data.get('profile_id', None)
-        days = request.data.get('days', None)
-        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
-        completed_exercises = 0
+        days = request.data.get('days', 7)
 
-        for i in child_all_sessions:
-            filter_session = History.objects.filter(session_id=i).filter(is_completed=True).filter(
-                datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
-            completed_exercises += filter_session.values('character_id').distinct().count() + \
-                                   filter_session.values('object_id').distinct().count() + \
-                                   filter_session.values('drawing_id').distinct().count()
+        filter_session = History.objects.filter(profile_id=profile_id_child).filter(is_completed=True).filter(
+            datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
+        completed_exercises = filter_session.values('character_id').distinct().count() + \
+                              filter_session.values('object_id').distinct().count() + \
+                              filter_session.values('drawing_id').distinct().count()
 
         return Response(
             data={'completed_exercises_sum': completed_exercises},
@@ -659,13 +664,15 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def exercise_review_character(self, request):
+        '''
+        takes profile id and to_display_no as input. Default to_display_no is 6.
+        to_display_no is how many exercises details are to be outputted.
+        Output is exercise review for characters.
+        '''
         profile_id_child = request.data.get('profile_id', None)
-        to_display_no = request.data.get('to_display_no', None)
-        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+        to_display_no = request.data.get('to_display_no', 6)
 
-        urdu_letter = History.objects.none()
-        for i in child_all_sessions:
-            urdu_letter = urdu_letter | History.objects.filter(session_id=i).filter(Q(character_id__isnull=False))
+        urdu_letter = History.objects.filter(profile_id=profile_id_child).filter(Q(character_id__isnull=False))
 
         lst_urdu_char = []
         for i in urdu_letter:
@@ -693,13 +700,15 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def exercise_review_object(self, request):
+        '''
+        takes profile id and to_display_no as input. Default to_display_no is 6.
+        to_display_no is how many exercises details are to be outputted.
+        Output is exercise review for words.
+        '''
         profile_id_child = request.data.get('profile_id', None)
-        to_display_no = request.data.get('to_display_no', None)
-        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
+        to_display_no = request.data.get('to_display_no', 6)
 
-        urdu_object = History.objects.none()
-        for i in child_all_sessions:
-            urdu_object = urdu_object | History.objects.filter(session_id=i).filter(Q(object_id__isnull=False))
+        urdu_object =  History.objects.filter(profile_id=profile_id_child).filter(Q(object_id__isnull=False))
 
         lst_urdu_object = []
         for i in urdu_object:
@@ -726,13 +735,14 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def exercise_review_drawing(self, request):
+        '''
+        takes profile id and to_display_no as input. Default to_display_no is 6.
+        to_display_no is how many exercises details are to be outputted.
+        Output is exercise review for drawing.
+        '''
         profile_id_child = request.data.get('profile_id', None)
-        to_display_no = request.data.get('to_display_no', None)
-        child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
-
-        drawing_ex = History.objects.none()
-        for i in child_all_sessions:
-            drawing_ex = drawing_ex | History.objects.filter(session_id=i).filter(Q(drawing_id__isnull=False))
+        to_display_no = request.data.get('to_display_no', 6)
+        drawing_ex = History.objects.filter(profile_id=profile_id_child).filter(Q(drawing_id__isnull=False))
 
         lst_drawing_ex = []
         for i in drawing_ex:
@@ -760,81 +770,82 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def check(self, request):
+
         return Response(
-            data=serializers.DrawingExerciseSerializer(
-                DrawingExercise.objects.all(), many=True).data,
+            data=serializers.CharactersSerializer(
+               Characters.objects.all(), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
 
-    #THIS FUNCTION WAS ONLY FOR ME TO TOO AND SEE  DATA SO PLEASE DON'T USE IT
-    @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
-    def insert_data(self, request):
-        from django.utils import timezone
-        words = ['alif', 'ttaa', 'paa', 'seey', 'baa', 'taa', 'daal', 'zaal', 'dhaal', 'seen', 'sheen', 'zwaad',
-                 'swaad']
-
-
-        from django.utils import timezone
-        import string
-
-        for i in range(1,10):
-
-            s = Session(
-                session_id=i,
-                profile_id=ChildProfile.objects.get(profile_id=1),
-                time_start=timezone.now(),
-                time_end=timezone.now() + datetime.timedelta(seconds=random.randint(0, 86400)),
-                token=''.join(random.choices(string.ascii_lowercase, k=5))
-            )
-            s.save()
-
-        for i in range(1,10):
-            His = History(session_id=Session.objects.get(session_id=i),
-                          stroke_score=random.random(),
-                          stroke_path='/strokes/' + words[i] + '.txt',
-                          time_taken=random.randint(1, 100),
-                          datetime_attempt=timezone.now(),
-                          similarity_score=random.random(),
-                          character_id=Characters.objects.get(character_id=i),
-                          coloring_id=None,
-                          object_id=None,
-                          is_completed=True,
-                          drawing_id=None
-                          )
-            His.save()
-
-        for i in range(1,10):
-            His = History(session_id=Session.objects.get(session_id=i),
-                          stroke_score=random.random(),
-                          stroke_path='/strokes/' + words[i] + '.txt',
-                          time_taken=random.randint(1, 100),
-                          datetime_attempt=timezone.now(),
-                          similarity_score=random.random(),
-                          character_id=None,
-                          coloring_id=None,
-                          object_id=ObjectWord.objects.get(object_id=i),
-                          is_completed=True,
-                          drawing_id=None
-                          )
-            His.save()
-
-        for i in range(1,10):
-            His = History(session_id=Session.objects.get(session_id=i),
-                          stroke_score=random.random(),
-                          stroke_path='/strokes/' + words[i] + '.txt',
-                          time_taken=random.randint(1, 100),
-                          datetime_attempt=timezone.now(),
-                          similarity_score=random.random(),
-                          character_id=None,
-                          coloring_id=None,
-                          object_id=None,
-                          is_completed=True,
-                          drawing_id=DrawingExercise.objects.get(drawing_id=i)
-                          )
-            His.save()
-
-        return Response(
-            data=serializers.HistorySerializer(
-                History.objects.all(), many=True).data,
-            status=status.HTTP_204_NO_CONTENT
-        )
+    # THIS FUNCTION WAS ONLY FOR ME TO TOO AND SEE  DATA SO PLEASE DON'T USE IT
+    # @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
+    # def insert_data(self, request):
+    #     from django.utils import timezone
+    #     words = ['alif', 'ttaa', 'paa', 'seey', 'baa', 'taa', 'daal', 'zaal', 'dhaal', 'seen', 'sheen', 'zwaad',
+    #              'swaad']
+    #
+    #
+    #     from django.utils import timezone
+    #     import string
+    #
+    #     for i in range(1,10):
+    #
+    #         s = Session(
+    #             session_id=i,
+    #             profile_id=ChildProfile.objects.get(profile_id=1),
+    #             time_start=timezone.now(),
+    #             time_end=timezone.now() + datetime.timedelta(seconds=random.randint(0, 86400)),
+    #             token=''.join(random.choices(string.ascii_lowercase, k=5))
+    #         )
+    #         s.save()
+    #
+    #     for i in range(1,10):
+    #         His = History(session_id=Session.objects.get(session_id=i),
+    #                       stroke_score=random.random(),
+    #                       stroke_path='/strokes/' + words[i] + '.txt',
+    #                       time_taken=random.randint(1, 100),
+    #                       datetime_attempt=timezone.now(),
+    #                       similarity_score=random.random(),
+    #                       character_id=Characters.objects.get(character_id=i),
+    #                       coloring_id=None,
+    #                       object_id=None,
+    #                       is_completed=True,
+    #                       drawing_id=None
+    #                       )
+    #         His.save()
+    #
+    #     for i in range(1,10):
+    #         His = History(session_id=Session.objects.get(session_id=i),
+    #                       stroke_score=random.random(),
+    #                       stroke_path='/strokes/' + words[i] + '.txt',
+    #                       time_taken=random.randint(1, 100),
+    #                       datetime_attempt=timezone.now(),
+    #                       similarity_score=random.random(),
+    #                       character_id=None,
+    #                       coloring_id=None,
+    #                       object_id=ObjectWord.objects.get(object_id=i),
+    #                       is_completed=True,
+    #                       drawing_id=None
+    #                       )
+    #         His.save()
+    #
+    #     for i in range(1,10):
+    #         His = History(session_id=Session.objects.get(session_id=i),
+    #                       stroke_score=random.random(),
+    #                       stroke_path='/strokes/' + words[i] + '.txt',
+    #                       time_taken=random.randint(1, 100),
+    #                       datetime_attempt=timezone.now(),
+    #                       similarity_score=random.random(),
+    #                       character_id=None,
+    #                       coloring_id=None,
+    #                       object_id=None,
+    #                       is_completed=True,
+    #                       drawing_id=DrawingExercise.objects.get(drawing_id=i)
+    #                       )
+    #         His.save()
+    #
+    #     return Response(
+    #         data=serializers.HistorySerializer(
+    #             History.objects.all(), many=True).data,
+    #         status=status.HTTP_204_NO_CONTENT
+    #     )

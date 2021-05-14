@@ -21,6 +21,7 @@ def cluster_to_db(file_path):
     kwargs = {'fields': fields, 'model': model}
     data_file.apply(upload_to_db, **kwargs, axis=1)
     print(f'Starting to upload {len(data_file.index)} records to Table... DONE.')
+    c = 'populate_scripts/cluster.csv'
 
 
 def feature_to_db(file_path):

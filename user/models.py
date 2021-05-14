@@ -35,15 +35,15 @@ class ChildProfile(models.Model):
         return f'{self.profile_id} - {self.name} - child of - {self.user_id}'
 
 
-class Session(models.Model):
-    session_id = models.AutoField(primary_key=True)
-    profile_id = models.ForeignKey(ChildProfile, on_delete=models.CASCADE)
-    time_start = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    time_end = models.DateTimeField(null=True, blank=True)
-    token = models.CharField(max_length=255)
-
-    def __str__(self):
-        return f'{self.session_id} - by {self.profile_id} - on {self.time_start}'
+# class Session(models.Model):
+#     session_id = models.AutoField(primary_key=True)
+#     profile_id = models.ForeignKey(ChildProfile, on_delete=models.CASCADE)
+#     time_start = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+#     time_end = models.DateTimeField(null=True, blank=True)
+#     token = models.CharField(max_length=255)
+#
+#     def __str__(self):
+#         return f'{self.session_id} - by {self.profile_id} - on {self.time_start}'
 
 
 class Clusters(models.Model):
@@ -94,7 +94,6 @@ class DrawingExercise(models.Model):
 
 class History(models.Model):
     attempt_id = models.AutoField(primary_key=True)
-    session_id = models.ForeignKey(Session, on_delete=models.CASCADE)
     stroke_path = models.CharField(max_length=255, null=False)
     time_taken = models.IntegerField(null=False)
     stroke_score = models.FloatField(null=True, blank=True)
@@ -105,7 +104,7 @@ class History(models.Model):
     coloring_id = models.ForeignKey(ColoringExercise, on_delete=models.PROTECT, null=True, blank=True)
     object_id = models.ForeignKey(ObjectWord, on_delete=models.PROTECT, null=True, blank=True)
     is_completed = models.BooleanField()
-
+    profile_id = models.ForeignKey(ChildProfile, on_delete=models.CASCADE)
 
 class Features(models.Model):
     feature_id = models.AutoField(primary_key=True)
