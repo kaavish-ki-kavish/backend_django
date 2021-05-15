@@ -14,7 +14,7 @@ from django.db.models import Sum, Count, Max, Min
 import os, datetime, random, copy
 
 from .models import ChildProfile, Characters, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
-    ClusterFeature, Features, AttemptFeatures, Dashoard
+    ClusterFeature, Features, AttemptFeatures, Dashoard, WordsUrdu
 
 from rest_framework.response import Response
 from . import serializers
@@ -770,10 +770,9 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def check(self, request):
-
         return Response(
-            data=serializers.CharactersSerializer(
-               Characters.objects.all(), many=True).data,
+            data=serializers.WordsUrduSerializer(
+               WordsUrdu.objects.all(), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
 

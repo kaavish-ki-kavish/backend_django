@@ -92,6 +92,13 @@ class DrawingExercise(models.Model):
     label = models.CharField(max_length=255, null=False)
 
 
+class WordsUrdu(models.Model):
+    word_id = models.AutoField(primary_key=True)
+    word_label = models.CharField(max_length=255, null=False)
+    ref_stroke_path = models.CharField(max_length=255, null=False)
+
+
+
 class History(models.Model):
     attempt_id = models.AutoField(primary_key=True)
     stroke_path = models.CharField(max_length=255, null=False)
@@ -105,6 +112,8 @@ class History(models.Model):
     object_id = models.ForeignKey(ObjectWord, on_delete=models.PROTECT, null=True, blank=True)
     is_completed = models.BooleanField()
     profile_id = models.ForeignKey(ChildProfile, on_delete=models.CASCADE)
+    word_id = models.ForeignKey(WordsUrdu, on_delete=models.CASCADE)
+
 
 class Features(models.Model):
     feature_id = models.AutoField(primary_key=True)

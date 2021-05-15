@@ -1,6 +1,6 @@
 import pandas as pd
 
-from user.models import Clusters, ClusterFeature, Features, Characters, ObjectWord, DrawingExercise
+from user.models import Clusters, ClusterFeature, Features, Characters, ObjectWord, DrawingExercise, WordsUrdu
 
 
 def upload_to_db(row, fields, model):
@@ -195,3 +195,17 @@ def drawing_exercises_to_db(file_path):
     kwargs = {'fields': fields, 'model': model}
     data_file.apply(upload_to_db, **kwargs, axis=1)
     print(f'Starting to upload {len(data_file.index)} records to Drawing Table... DONE.')
+
+
+def words_to_db():
+    """
+    populated WordsUrdu table
+    """
+    file_path = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/words/files_dir.csv'
+
+    data_file = pd.read_csv(file_path, header=0)
+    fields = ['word_id', 'word_label', 'ref_stroke_path']
+    model = WordsUrdu
+    kwargs = {'fields': fields, 'model': model}
+    data_file.apply(upload_to_db, **kwargs, axis=1)
+    print(f'Starting to upload {len(data_file.index)} records to Table... DONE.')

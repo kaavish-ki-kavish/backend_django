@@ -3,7 +3,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import serializers
 from django.contrib.auth.models import BaseUserManager
 from .models import ChildProfile, Characters, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
-    ClusterFeature, Features, AttemptFeatures, Dashoard
+    ClusterFeature, Features, AttemptFeatures, Dashoard, WordsUrdu
 
 User = get_user_model()
 
@@ -173,6 +173,12 @@ class DashboardSerializer(serializers.ModelSerializer):
         fields = ('dashboard_id', 'time_path', 'score_path', 'completion_path', 'profile_id')
 
 
+class WordsUrduSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WordsUrdu
+        fields = ('word_id', 'word_label', 'ref_stroke_path')
+
+
 class DataEntrySerializer(serializers.Serializer):
     char = serializers.CharField(max_length=255, required=True)
     data = serializers.ListField(
@@ -180,3 +186,5 @@ class DataEntrySerializer(serializers.Serializer):
             child=serializers.ListField(
                 child=serializers.IntegerField())))
     exercise = serializers.IntegerField()
+
+
