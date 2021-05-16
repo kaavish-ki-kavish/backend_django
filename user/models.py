@@ -110,8 +110,8 @@ class History(models.Model):
     coloring_id = models.ForeignKey(ColoringExercise, on_delete=models.PROTECT, null=True, blank=True)
     object_id = models.ForeignKey(ObjectWord, on_delete=models.PROTECT, null=True, blank=True)
     is_completed = models.BooleanField()
-    profile_id = models.ForeignKey(ChildProfile, on_delete=models.CASCADE)
-    word_id = models.ForeignKey(WordsUrdu, on_delete=models.CASCADE, null=True, blank=True)
+    profile_id = models.ForeignKey(ChildProfile, on_delete=models.PROTECT)
+    word_id = models.ForeignKey(WordsUrdu, on_delete=models.PROTECT, null=True, blank=True)
 
 
 class Features(models.Model):
