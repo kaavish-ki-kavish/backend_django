@@ -783,3 +783,61 @@ class AuthViewSet(viewsets.GenericViewSet):
                 ObjectWord.objects.all(), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
+    
+    @action(methods=['GET'], detail=False)
+    def insert_data(self, request):
+        words = ['alif', 'ttaa', 'paa', 'seey', 'baa', 'taa', 'daal', 'zaal', 'dhaal', 'seen', 'sheen', 'zwaad',
+                 'swaad']
+        for i in range(1, 5):
+            His = History(profile_id=ChildProfile.objects.get(profile_id=i),
+                          stroke_score=random.random(),
+                          stroke_path='/strokes/' + words[i] + '.txt',
+                          time_taken=random.randint(1, 100),
+                          datetime_attempt=timezone.now(),
+                          similarity_score=random.random(),
+                          character_id=Characters.objects.get(character_id=i),
+                          coloring_id=None,
+                          object_id=None,
+                          is_completed=True,
+                          drawing_id=None,
+                          word_id=None
+                          )
+            His.save()
+            
+        for i in range(1, 5):
+            His = History(profile_id=ChildProfile.objects.get(profile_id=i),
+                          stroke_score=random.random(),
+                          stroke_path='/strokes/' + words[i] + '.txt',
+                          time_taken=random.randint(1, 100),
+                          datetime_attempt=timezone.now(),
+                          similarity_score=random.random(),
+                          character_id=None,
+                          coloring_id=None,
+                          object_id=None,
+                          is_completed=True,
+                          drawing_id=DrawingExercise.objects.get(drawing_id=i),
+                          word_id=None
+                          )
+            His.save()
+    
+        for i in range(1, 5):
+            His = History(profile_id=ChildProfile.objects.get(profile_id=i),
+                          stroke_score=random.random(),
+                          stroke_path='/strokes/' + words[i] + '.txt',
+                          time_taken=random.randint(1, 100),
+                          datetime_attempt=timezone.now(),
+                          similarity_score=random.random(),
+                          character_id=None,
+                          coloring_id=None,
+                          object_id=None,
+                          is_completed=True,
+                          drawing_id=None,
+                          word_id=WordsUrdu.objects.get(word_id=i),
+                          )
+            His.save()
+    
+        return Response(
+            data=serializers.HistorySerializer(
+                History.objects.all(), many=True).data,
+            status=status.HTTP_200_OK
+        )
