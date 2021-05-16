@@ -666,7 +666,7 @@ def get_words_score(data, chars):
         img = img / 255
 
         model_cnn = words_cnn_model()
-        model_cnn.load_weights(os.path.join(__location__, '2wordsmodel.h5'))
+        model_cnn.load_weights(os.path.join(__location__, '2wordsmodel_new.h5'))
 
         pred = model_cnn.predict(np.reshape(img, (1, img_size, img_size, 1)))
         preds_x.append(pred)
