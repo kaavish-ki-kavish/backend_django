@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from django.db.models import Q
 from django.utils import timezone
-from django.db.models import Sum, Count, Max, Min
+from django.db.models import Sum, Count, Max, Min, F
 import os, datetime, random, copy
 
 from .models import ChildProfile, Characters, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
@@ -98,7 +98,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data['new_password'])
         request.user.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
 
     def get_serializer_class(self):
         if not isinstance(self.serializer_classes, dict):
@@ -130,7 +130,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         delete_child_profile(**serializer.validated_data)
         return Response(
             data=serializers.ChildRegisterSerializer(ChildProfile.objects.filter(user_id=request.user), many=True).data,
-            status=status.HTTP_204_NO_CONTENT)
+            status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def get_most_recent_child(self, request):
@@ -142,7 +142,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         edit_child_profile(**serializer.validated_data, parent=request.user.pk)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def get_prediction_drawing(self, request):
@@ -218,21 +218,6 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(
             data={
                 'stroke_path': 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/strokes/' + stroke_name},
-            status=status.HTTP_200_OK
-        )
-
-    # Takes child profile id and gives queryset of generated drawing exercise
-    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    def generate_drawing_exercise(self, request):
-        profile_id_stroke = request.data.get('profile_id', None)
-        profile_session_id = Session.objects.values_list('session_id', flat=True).filter(
-            profile_id=profile_id_stroke).latest('session_id')
-        profile_session_drawing_id = History.objects.values_list('drawing_id', flat=True).filter(
-            session_id=profile_session_id).latest('attempt_id')
-        # next exercise will be +1 of on which I am rn
-        return Response(
-            data=serializers.DrawingExerciseSerializer(
-                DrawingExercise.objects.filter(drawing_id=(profile_session_drawing_id + 1)), many=True).data,
             status=status.HTTP_200_OK
         )
 
@@ -325,6 +310,64 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(response)
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def generate_drawing_exercise(self, request):
+        """
+        Takes child profile id and gives queryset of generated drawing exercise
+        """
+        profile_id = request.data.get('profile_id', None)
+        total_drawing_exercises = DrawingExercise.objects.all().count()
+
+        profile_drawing_hist = History.objects.filter(profile_id=profile_id).filter(drawing_id__isnull=False)
+        if profile_drawing_hist:
+            count_is_completed = profile_drawing_hist.filter(is_completed=True).count()
+            if count_is_completed < total_drawing_exercises:
+                latest_drawing_id = profile_drawing_hist.latest('drawing_id').drawing_id.drawing_id
+                next_exercise = latest_drawing_id + 1
+            else:
+                min_ordered_drawing = profile_drawing_hist.filter(drawing_id__isnull=False).annotate(
+                    total_score=F('stroke_score') + F('similarity_score')
+                ).order_by('total_score')
+                next_exercise = min_ordered_drawing[0].drawing_id.drawing_id
+
+        else:
+            next_exercise = DrawingExercise.objects.all().first().drawing_id
+
+        return Response(
+            data=serializers.DrawingExerciseSerializer(
+                DrawingExercise.objects.filter(drawing_id=next_exercise), many=True).data,
+            status=status.HTTP_200_OK
+        )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def generate_urdu_words_exercise(self, request):
+        """
+        Takes child profile id and gives queryset of generated drawing exercise
+        """
+        profile_id = request.data.get('profile_id', None)
+        total_word_exercises = WordsUrdu.objects.all().count()
+
+        profile_words_hist = History.objects.filter(profile_id=profile_id).filter(word_id__isnull=False)
+        if profile_words_hist:
+            count_is_completed = profile_words_hist.filter(is_completed=True).count()
+            if count_is_completed < total_word_exercises:
+                latest_word_id = profile_words_hist.latest('word_id').word_id.word_id
+                next_exercise = latest_word_id + 1
+            else:
+                min_ordered_words = profile_words_hist.annotate(
+                    total_score=F('stroke_score') + F('similarity_score')
+                ).order_by('total_score')
+                next_exercise = min_ordered_words[0].word_id.word_id
+
+        else:
+            next_exercise = WordsUrdu.objects.all().first().word_id
+
+        return Response(
+            data=serializers.WordsUrduSerializer(
+                WordsUrdu.objects.filter(word_id=next_exercise), many=True).data,
+            status=status.HTTP_200_OK
+        )
+
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def generate_character_exercise(self, request):
         """
         inputs: profile_id (child profile id), is_seq (1 / 0) : indicating if character will be generated in sequence or no.
@@ -354,7 +397,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             return Response(
                 data=serializers.CharactersSerializer(
                     Characters.objects.filter(sequence_id=character_sequence_id + 1)[:1], many=True).data,
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_200_OK
             )
         else:
 
@@ -402,7 +445,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             )
 
     @action(methods=["GET"], detail=False)
-    def generate_urdu_word_exercise(self, request):
+    def generate_urdu_object_exercise(self, request):
         """
         generating random urdu word exercise
         """
@@ -440,7 +483,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                     'time_graph_path': dashboard_time_graph_path,
                     'score_graph_path': dashboard_score_graph_path,
                     'score_completion_path': dashboard_completion_graph_path},
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_200_OK
             )
         else:
 
@@ -855,7 +898,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                                    )
         return Response(
             data={'score': score},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -863,7 +906,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(
             data=serializers.HistorySerializer(
                 History.objects.all(), many=True).data,
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
     
     @action(methods=['GET'], detail=False)
