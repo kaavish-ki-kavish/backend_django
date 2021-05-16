@@ -46,6 +46,87 @@ def feature_model_pseudo(file_path):
 
 
 def attempt_score(char, data, exercise):
+    scores = []
+    whole_x, whole_y, penup = get_whole_stroke(data)
+
+    url = 'http://aangantf.herokuapp.com/api/auth/get_score'
+
+    if exercise == 0:  # drawing
+        tf_data = {
+            'exercise': 0,
+            'char': char,
+            'img': [[0, 0]],
+            'whole_x': whole_x,
+            'whole_y': whole_y,
+            'pen_up': list(penup),
+            'data': data
+        }
+        response = requests.post(url, json=tf_data)
+        print(response)
+        print(type(response))
+        sys.stdout.flush()
+        print(response.json()['scores'])
+        sys.stdout.flush()
+        a = response.json()['scores'][0]  # feature_scorer(img, p_features,s_features, verbose= 1)
+        b = response.json()['scores'][1]  # stroke(whole_x, whole_y, penup, char)
+        scores.append(a)
+        scores.append(b)
+
+
+
+    elif exercise == 1:  # urdu letters
+        scorer = UrduCnnScorer(whole_x, whole_y, penup)
+        label = scorer.NUM2LABEL.index(char)
+        img = scorer.preprocessing()
+        print(img.shape)
+        # scores.append(scorer.test_img(img)[0, label])
+
+        tf_data = {
+            'exercise': 1,
+            'char': char,
+            'img': img.tolist(),
+            'whole_x': whole_x,
+            'whole_y': whole_y,
+            'pen_up': list(penup),
+            'data': data
+        }
+
+        response = requests.post(url, json=tf_data)
+        print(response)
+        print(type(response))
+        sys.stdout.flush()
+        print(response.json()['scores'])
+        sys.stdout.flush()
+        # p_features, s_features = get_feature_vector(char)
+        a = response.json()['scores'][0]  # feature_scorer(img, p_features,s_features, verbose= 1)
+        b = response.json()['scores'][1]  # perfect_scorer(whole_x, whole_y, penup, char)
+        scores.append(a)
+        scores.append(b)
+
+
+    elif exercise == 2:
+        
+        tf_data = {
+            'exercise': 2,
+            'char': char,
+            'img': np.zeros((28, 28)).tolist(),
+            'whole_x': whole_x,
+            'whole_y': whole_y,
+            'pen_up': list(penup),
+            'data': data
+        }
+
+        response = requests.post(url, json=tf_data)
+        a = response.json()['scores'][0]
+        b = a
+        scores.append(a)
+
+    stroke_score = b
+    similarity_score = a #CNN
+ 
+        
+    print(scores)
+
     stroke_score = random.randint(0, 100)
     similarity_score = random.randint(0, 100)
     return stroke_score, similarity_score
@@ -836,13 +917,14 @@ class AuthViewSet(viewsets.GenericViewSet):
         time_str = time.strftime("%Y%m%d-%H%M%S")
 
         stroke_path = get_stroke_path(data, profile_id, exercise_type, time_str)
-
+        score = 0.1
+        
         if exercise_type == 0:  # drawing
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
             score = (stroke_score + similarity_score) // 2
-            if score > 50:
-                is_completed = True
             is_completed = False
+            if score > 0.5:
+                is_completed = True
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
                                    stroke_path=stroke_path,
@@ -860,9 +942,9 @@ class AuthViewSet(viewsets.GenericViewSet):
         if exercise_type == 1:  # character
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
             score = (stroke_score + similarity_score) // 2
-            if score > 60:
-                is_completed = True
             is_completed = False
+            if score > 0.60:
+                is_completed = True
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
                                    stroke_path=stroke_path,
@@ -880,9 +962,9 @@ class AuthViewSet(viewsets.GenericViewSet):
         if exercise_type == 2:  # words
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
             score = (stroke_score + similarity_score) // 2
-            if score > 50:
-                is_completed = True
             is_completed = False
+            if score > 0.5:
+                is_completed = True
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
                                    stroke_path=stroke_path,
@@ -896,10 +978,11 @@ class AuthViewSet(viewsets.GenericViewSet):
                                    drawing_id=None,
                                    word_id=WordsUrdu.objects.get(word_label=char)
                                    )
-        return Response(
-            data={'score': score},
-            status=status.HTTP_200_OK
-        )
+        response = {
+            'message': msg,
+            'prediction': score,
+        }
+        return Response(response)
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def check(self, request):
