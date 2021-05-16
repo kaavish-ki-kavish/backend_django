@@ -225,12 +225,6 @@ class AuthViewSet(viewsets.GenericViewSet):
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def generate_drawing_exercise(self, request):
         profile_id_stroke = request.data.get('profile_id', None)
-        # return Response(
-        #     data=serializers.SessionSerializer(
-        #         Session.objects.filter(profile_id=(profile_id_stroke)), many=True).data,
-        #     status=status.HTTP_204_NO_CONTENT
-        # )
-
         profile_session_id = Session.objects.values_list('session_id', flat=True).filter(
             profile_id=profile_id_stroke).latest('session_id')
         profile_session_drawing_id = History.objects.values_list('drawing_id', flat=True).filter(
@@ -785,6 +779,10 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         if exercise_type == 0:  # drawing
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
+            score = (stroke_score + similarity_score) // 2
+            if score > 50:
+                is_completed = True
+            is_completed = False
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
                                    stroke_path=stroke_path,
@@ -794,13 +792,17 @@ class AuthViewSet(viewsets.GenericViewSet):
                                    character_id=None,
                                    coloring_id=None,
                                    object_id=None,
-                                   is_completed=True,
+                                   is_completed=is_completed,
                                    drawing_id=DrawingExercise.objects.get(label=char),
                                    word_id=None
                                    )
 
         if exercise_type == 1:  # character
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
+            score = (stroke_score + similarity_score) // 2
+            if score > 60:
+                is_completed = True
+            is_completed = False
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
                                    stroke_path=stroke_path,
@@ -810,13 +812,17 @@ class AuthViewSet(viewsets.GenericViewSet):
                                    character_id=Characters.objects.get(label=char),
                                    coloring_id=None,
                                    object_id=None,
-                                   is_completed=True,
+                                   is_completed=is_completed,
                                    drawing_id=None,
                                    word_id=None
                                    )
 
         if exercise_type == 2:  # words
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
+            score = (stroke_score + similarity_score) // 2
+            if score > 50:
+                is_completed = True
+            is_completed = False
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
                                    stroke_path=stroke_path,
@@ -826,28 +832,12 @@ class AuthViewSet(viewsets.GenericViewSet):
                                    character_id=None,
                                    coloring_id=None,
                                    object_id=None,
-                                   is_completed=True,
+                                   is_completed=is_completed,
                                    drawing_id=None,
                                    word_id=WordsUrdu.objects.get(word_label=char)
                                    )
-
-        if exercise_type == 3:  # object word
-            stroke_score, similarity_score = attempt_score(char, data, exercise_type)
-            History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
-                                   stroke_score=stroke_score,
-                                   stroke_path=stroke_path,
-                                   time_taken=random.randint(1, 20),
-                                   datetime_attempt=timezone.now(),
-                                   similarity_score=similarity_score,
-                                   character_id=None,
-                                   coloring_id=None,
-                                   object_id=None,
-                                   is_completed=True,
-                                   drawing_id=None,
-                                   word_id=ObjectWord.objects.get(label=char)
-                                   )
         return Response(
-            data={'score': (stroke_score + similarity_score) // 2},
+            data={'score': score},
             status=status.HTTP_204_NO_CONTENT
         )
 
