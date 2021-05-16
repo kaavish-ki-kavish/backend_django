@@ -209,3 +209,14 @@ def words_to_db():
     kwargs = {'fields': fields, 'model': model}
     data_file.apply(upload_to_db, **kwargs, axis=1)
     print(f'Starting to upload {len(data_file.index)} records to Table... DONE.')
+
+
+def main_pop():
+    a = [characters_to_db, object_word_to_db, drawing_exercises_to_db]
+    cluster_file = './populate_scripts/cluster.csv'
+    feature_file = './populate_scripts/feature.csv'
+    cluster_to_db(cluster_file)
+    feature_to_db(feature_file)
+    cluster_feature_to_db(cluster_file, feature_file)
+    for f in a:
+        print('doiing......', f())
