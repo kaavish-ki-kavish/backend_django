@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model, password_validation
 from rest_framework.authtoken.models import Token
 from rest_framework import serializers
 from django.contrib.auth.models import BaseUserManager
-from .models import ChildProfile, Characters, Session, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
-    ClusterFeature, Features, AttemptFeatures, Dashoard
+from .models import ChildProfile, Characters, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
+    ClusterFeature, Features, AttemptFeatures, Dashoard, WordsUrdu
 
 User = get_user_model()
 
@@ -99,19 +99,18 @@ class EditChildSerializer(serializers.Serializer):
 #         fields = ('character_id', 'level', 'ref_stroke_path', 'ref_object_path', 'label', 'sound_path', 'sequence_id')
 
 
-class SessionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Session
-        fields = ('session_id', 'profile_id', 'time_start', 'time_end', 'token')
+# class SessionSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Session
+#         fields = ('session_id', 'profile_id', 'time_start', 'time_end', 'token')
 
 
 class HistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = History
         fields = (
-            'attempt_id', 'session_id', 'stroke_path', 'time_taken', 'stroke_score', 'similarity_score',
-            'datetime_attempt',
-            'character_id', 'drawing_id', 'coloring_id', 'object_id', 'is_completed')
+            'attempt_id', 'stroke_path', 'time_taken', 'stroke_score', 'similarity_score',
+            'datetime_attempt', 'character_id', 'drawing_id', 'coloring_id', 'object_id', 'is_completed', 'profile_id')
 
 
 class CharactersSerializer(serializers.ModelSerializer):
@@ -174,6 +173,12 @@ class DashboardSerializer(serializers.ModelSerializer):
         fields = ('dashboard_id', 'time_path', 'score_path', 'completion_path', 'profile_id')
 
 
+class WordsUrduSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WordsUrdu
+        fields = ('word_id', 'word_label', 'ref_stroke_path')
+
+
 class DataEntrySerializer(serializers.Serializer):
     char = serializers.CharField(max_length=255, required=True)
     data = serializers.ListField(
@@ -181,3 +186,5 @@ class DataEntrySerializer(serializers.Serializer):
             child=serializers.ListField(
                 child=serializers.IntegerField())))
     exercise = serializers.IntegerField()
+
+

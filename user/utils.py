@@ -5,11 +5,12 @@ from github import Github
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
-import os
 import torchvision
 from torchvision import datasets, transforms
 import cv2
 import base64
+
+import os
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -55,23 +56,6 @@ def edit_child_profile(profile_id, name, dob, gender, level, parent):
     else:
         raise serializers.ValidationError("Parent does not have authorization to edit child")
 
-    # from git import Repo
-    #
-    # repo_dir = repo_name
-    # repo = Repo(repo_name)
-    # file_path = 'dashboard/' + git_folder + '/' + file_name
-    # file_list = [file_path]
-    # commit_message = 'committing' + file_name
-    # repo.index.add(file_list)
-    # repo.index.commit(commit_message)
-    # origin = repo.remote('origin')
-    # origin.push()
-
-
-import os
-
-__location__ = os.path.realpath(
-    os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 
 def push_file(repo_name, git_folder_path, file_name):

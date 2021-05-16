@@ -1,6 +1,6 @@
 import pandas as pd
 
-from user.models import Clusters, ClusterFeature, Features, Characters, ObjectWord
+from user.models import Clusters, ClusterFeature, Features, Characters, ObjectWord, DrawingExercise, WordsUrdu
 
 
 def upload_to_db(row, fields, model):
@@ -21,6 +21,7 @@ def cluster_to_db(file_path):
     kwargs = {'fields': fields, 'model': model}
     data_file.apply(upload_to_db, **kwargs, axis=1)
     print(f'Starting to upload {len(data_file.index)} records to Table... DONE.')
+    c = 'populate_scripts/cluster.csv'
 
 
 def feature_to_db(file_path):
@@ -144,7 +145,8 @@ def characters_to_db():
     urdu_data['sound_path'] = GLOBAL_PATH + urdu_data['sound_path']
     urdu_data['ref_object_path'] = GLOBAL_PATH + urdu_data['ref_object_path']
 
-    fields = ['label', 'ref_stroke_path', 'sound_path', 'ref_object_path', 'character_id', 'cluster_id', 'level', 'sequence_id']
+    fields = ['label', 'ref_stroke_path', 'sound_path', 'ref_object_path', 'character_id', 'cluster_id', 'level',
+              'sequence_id']
     model = Characters
     kwargs = {'fields': fields, 'model': model}
     urdu_data.apply(upload_to_db, **kwargs, axis=1)
@@ -152,7 +154,6 @@ def characters_to_db():
 
 
 def object_word_to_db():
-
     urdu_csv_file = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/urdu_file_dir.csv'
     GLOBAL_PATH = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/'
     urdu_data = pd.read_csv(urdu_csv_file)
@@ -174,3 +175,37 @@ def object_word_to_db():
     kwargs = {'fields': fields, 'model': model}
     urdu_data.apply(upload_to_db, **kwargs, axis=1)
     print(f'Starting to upload {len(urdu_data.index)} records to Table... DONE.')
+
+
+def drawing_exercises_to_db(file_path):
+    GLOBAL_PATH = "https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aangan-filesystem/"
+
+    """ Handles reading lines from a file and saving to the Database.
+
+    :param file_path: Path to where file is located.
+    :type file_path: str
+    """
+
+    data_file = pd.read_csv(file_path, header=0)
+    data_file['stroke_path'] = GLOBAL_PATH + data_file['stroke_path']
+    data_file['image_path'] = GLOBAL_PATH + data_file['image_path']
+    print(f'Starting to upload {len(data_file.index)} records to Drawing Table')
+    fields = ['label', 'ref_img_path', 'ref_stroke_path', 'level', 'sound_path']
+    model = DrawingExercise
+    kwargs = {'fields': fields, 'model': model}
+    data_file.apply(upload_to_db, **kwargs, axis=1)
+    print(f'Starting to upload {len(data_file.index)} records to Drawing Table... DONE.')
+
+
+def words_to_db():
+    """
+    populated WordsUrdu table
+    """
+    file_path = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/words/files_dir.csv'
+
+    data_file = pd.read_csv(file_path, header=0)
+    fields = ['word_id', 'word_label', 'ref_stroke_path']
+    model = WordsUrdu
+    kwargs = {'fields': fields, 'model': model}
+    data_file.apply(upload_to_db, **kwargs, axis=1)
+    print(f'Starting to upload {len(data_file.index)} records to Table... DONE.')
