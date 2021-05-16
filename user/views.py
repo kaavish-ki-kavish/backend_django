@@ -147,6 +147,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         'generate_character': serializers.Characters,
         'session': serializers.HistorySerializer,
         'get_score': serializers.DataEntrySerializer,
+        'submit_exercise': serializers.DataEntrySerializer,
     }
     queryset = ''
 
@@ -918,6 +919,10 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         stroke_path = get_stroke_path(data, profile_id, exercise_type, time_str)
         score = 0.1
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        data = data['data']
         
         if exercise_type == 0:  # drawing
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
