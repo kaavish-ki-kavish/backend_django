@@ -36,7 +36,7 @@ from char_regression import get_char_score
 # from .urduCNN import UrduCnnScorer
 
 from word_scorer import get_words_score
-
+from drawing_scorer import  get_drawing_score
 User = get_user_model()
 
 __location__ = os.path.realpath(
@@ -236,13 +236,12 @@ class AuthViewSet(viewsets.GenericViewSet):
         msg = 'Successful'
 
         if data['exercise'] == 0: #drawing
-            categories = ['circle', 'triangle', 'bird', 'square', 'axe', 'airplane', 'apple', 'banana', 'arm', 'car']
+            categories = sorted(['circle', 'triangle', 'square', 'apple', 'tree', 'eye', 'star', 'cloud','door', 'flower'])
             if char in categories:
-                label = categories.index(char)
+                #label = categories.index(char)
                 #scores.append(get_mahalanobis_distance(whole_x, whole_y, penup, label))
-                score = get_drawing_score_cnn(whole_x, whole_y, penup, label)
-                scores.append(score)
-                scores.append(score)
+                #scores.append(get_drawing_score_cnn(whole_x, whole_y, penup, label))
+                scores = get_drawing_score(data['data'], char)
                 print(scores)
 
             else:
