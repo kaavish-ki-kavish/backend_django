@@ -508,14 +508,20 @@ def scale_strokes(x, y, width, height):
     return scaled_x, scaled_y
 
 
-
-
 # import numpy as np
 # import matplotlib.pyplot as plt
 # from PIL import Image, ImageDraw
 #
 #
-# def cordToImage(x, y):
+# def cordToImage(data):
+#     x = []
+#     y = []
+#
+#     for i in data:
+#         for j in i:
+#             x.append(j[0])
+#             y.append(j[1])
+#
 #     x_0, y_0 = min(x), min(y)
 #     x_n, y_n = max(x), max(y)
 #     w = x_n - x_0 + 1
@@ -524,6 +530,7 @@ def scale_strokes(x, y, width, height):
 #     x_origin = [x_cord - x_0 for x_cord in x]
 #     y_origin = [y_cord - y_0 for y_cord in y]
 #     x_y = list(zip(x_origin, y_origin))
+#     print(x_y)
 #
 #     im = Image.new('RGB', (w + padding, h + padding), (0, 0, 0))
 #     draw = ImageDraw.Draw(im)
@@ -534,12 +541,9 @@ def scale_strokes(x, y, width, height):
 #     plt.show()
 #
 #
-#
-#
-#
-#
-#
-#
-# x = [106, 79, 61, 43, 25, 14, 3, 0, 1, 10, 23, 42, 65, 83, 99, 121, 139, 157, 174, 209, 221, 233, 251, 255, 255, 254, 248, 226, 201, 163, 109, 107, 104, 118, 139, 160, 162, 159, 139, 124, 117]
-# y = [89, 73, 71, 82, 102, 121, 150, 168, 195, 219, 231, 241, 247, 245, 238, 213, 225, 230, 233, 231, 225, 213, 181, 165, 143, 130, 118, 100, 89, 83, 87, 85, 62, 33, 10, 0, 5, 12, 34, 57, 86]
-# cordToImage(x, y)
+# a = [[[174, 100], [174, 100], [174, 100], [175, 105], [176, 121], [177, 139], [178, 160], [178, 205], [178, 221],
+#       [176, 241], [175, 245], [175, 246], [175, 246], [175, 247], [175, 247], [175, 248], [174, 249], [174, 249],
+#       [174, 250], [174, 250], [174, 250]]]
+# cordToImage(a)
+
+
