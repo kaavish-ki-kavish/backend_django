@@ -2,13 +2,11 @@ from django.contrib.auth import authenticate, get_user_model, login
 from rest_framework import serializers
 from .models import ChildProfile
 from github import Github
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-import numpy as np
-import torchvision
-from torchvision import datasets, transforms
-import cv2
 import base64
+from PIL import Image, ImageDraw
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
 
 import os
 
@@ -57,7 +55,6 @@ def edit_child_profile(profile_id, name, dob, gender, level, parent):
         raise serializers.ValidationError("Parent does not have authorization to edit child")
 
 
-
 def push_file(repo_name, git_folder_path, file_name):
     token = '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'
     # p_token = ''.join([chr(ord(i) - 1) for i in token])
@@ -78,7 +75,6 @@ def push_file(repo_name, git_folder_path, file_name):
     file.close()
 
     repo.create_file(git_file, f"committing {file_name}", content, branch="main")
-    print(git_file + ' CREATED')
 
 
 def push_image_file(git_folder_path, file_name):
@@ -101,7 +97,6 @@ def push_image_file(git_folder_path, file_name):
         data = base64.b64encode(content)
 
     repo.create_file(git_file, f"committing {file_name}", content, branch="main")
-    print(git_file + ' CREATED')
 
 
 def get_whole_stroke(drawing):
@@ -152,3 +147,63 @@ def crop_image(array):
                              value=color)
 
     return img
+
+
+def get_dim(stroke):
+    new_stroke = np.concatenate(stroke)
+    x_min = np.min(new_stroke[:, 0])
+    y_min = np.min(new_stroke[:, 1])
+    x_max = np.max(new_stroke[:, 0])
+    y_max = np.max(new_stroke[:, 1])
+    height = y_max - y_min + 30
+    width = x_max - x_min + 30
+    for i in range(len(stroke)):
+        stroke[i] = stroke[i] - np.array([x_min - 15, y_min - 15])
+    return stroke, width, height
+
+
+def is_dot(stroke, canvas_width, canvas_height):
+    array = np.zeros((len(stroke), 2))
+    for i in range(len(stroke)):
+        array[i] = stroke[i]
+    mean_pos = np.mean(array, axis=0)
+    dists = np.max(np.abs(array - mean_pos), axis=0)
+    if dists[0] < (canvas_width * 0.1) and dists[1] < (canvas_height * 0.05):
+        return True, mean_pos
+    return False, mean_pos
+
+
+def make_image(stroke_data):
+    stroke_data, canvas_width, canvas_height = get_dim(stroke_data)
+    im = Image.new('RGB', (canvas_width, canvas_height), (0, 0, 0))
+    draw = ImageDraw.Draw(im)
+    percent_stroke = 0.03
+    for stroke in stroke_data:
+        dot, mean_pos = is_dot(stroke, canvas_width, canvas_height)
+        if dot:
+            start = int(mean_pos[0] - ((canvas_width * percent_stroke) // 2)), int(
+                mean_pos[1] - ((canvas_height * percent_stroke) // 2))
+            end = int(mean_pos[0] + ((canvas_width * percent_stroke) // 2)), int(
+                mean_pos[1] + ((canvas_height * percent_stroke) // 2))
+            draw.ellipse([start, end], fill=(255, 255, 255))
+
+        else:
+            draw.line([tuple(i) for i in stroke], fill=(255, 255, 255), width=10)
+
+    im = np.array(im)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    ret, thresh1 = cv2.threshold(im, 1, 255, cv2.THRESH_BINARY_INV)
+    return thresh1
+
+
+def get_stroke_path(data, profile_id_stroke, exercise_type, time_stamp):
+    stroke_name = str(profile_id_stroke) + '_' + str(exercise_type) + '_' + str(time_stamp)  + '.png'
+    path = 'strokes/' + stroke_name
+    img = make_image(data)
+    plt.imshow(img, cmap='gray')
+    plt.axis('off')
+    plt.savefig(os.path.join(__location__, path))
+
+    push_image_file(path, stroke_name)
+
+    return 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/strokes/' + stroke_name

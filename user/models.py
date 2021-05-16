@@ -98,7 +98,6 @@ class WordsUrdu(models.Model):
     ref_stroke_path = models.CharField(max_length=255, null=False)
 
 
-
 class History(models.Model):
     attempt_id = models.AutoField(primary_key=True)
     stroke_path = models.CharField(max_length=255, null=False)
@@ -112,7 +111,7 @@ class History(models.Model):
     object_id = models.ForeignKey(ObjectWord, on_delete=models.PROTECT, null=True, blank=True)
     is_completed = models.BooleanField()
     profile_id = models.ForeignKey(ChildProfile, on_delete=models.CASCADE)
-    word_id = models.ForeignKey(WordsUrdu, on_delete=models.CASCADE)
+    word_id = models.ForeignKey(WordsUrdu, on_delete=models.CASCADE, null=True, blank=True)
 
 
 class Features(models.Model):

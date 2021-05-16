@@ -19,24 +19,16 @@ from .models import ChildProfile, Characters, History, ObjectWord, ColoringExerc
 from rest_framework.response import Response
 from . import serializers
 from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
-    edit_child_profile, push_file, push_image_file, get_whole_stroke
+    edit_child_profile, push_file, push_image_file, get_whole_stroke, get_stroke_path
 
-from django.http import JsonResponse
 from .classifier import RandomForestClassifier
 from .feature_extractor import hbr_feature_extract, scale_strokes
 from .urduCNN import UrduCnnScorer
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
-import cv2 as cv
-import torch
-import torch.nn.functional as F
-import torchvision
 import sys
-from torchvision import datasets, transforms
-from torch.utils import data
-import torch.nn as nn
 import requests
+import time
 
 # from django.shortcuts import render
 # from .apps import PredictorConfig
@@ -51,6 +43,12 @@ __location__ = os.path.realpath(
 
 def feature_model_pseudo(file_path):
     return np.random.rand(1, 28)[0]
+
+
+def attempt_score(char, data, exercise):
+    stroke_score = random.randint(0, 100)
+    similarity_score = random.randint(0, 100)
+    return stroke_score, similarity_score
 
 
 class AuthViewSet(viewsets.GenericViewSet):
@@ -227,12 +225,6 @@ class AuthViewSet(viewsets.GenericViewSet):
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def generate_drawing_exercise(self, request):
         profile_id_stroke = request.data.get('profile_id', None)
-        # return Response(
-        #     data=serializers.SessionSerializer(
-        #         Session.objects.filter(profile_id=(profile_id_stroke)), many=True).data,
-        #     status=status.HTTP_204_NO_CONTENT
-        # )
-
         profile_session_id = Session.objects.values_list('session_id', flat=True).filter(
             profile_id=profile_id_stroke).latest('session_id')
         profile_session_drawing_id = History.objects.values_list('drawing_id', flat=True).filter(
@@ -725,7 +717,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         profile_id_child = request.data.get('profile_id', None)
         to_display_no = request.data.get('to_display_no', 6)
 
-        urdu_object =  History.objects.filter(profile_id=profile_id_child).filter(Q(object_id__isnull=False))
+        urdu_object = History.objects.filter(profile_id=profile_id_child).filter(Q(object_id__isnull=False))
 
         lst_urdu_object = []
         for i in urdu_object:
@@ -785,11 +777,92 @@ class AuthViewSet(viewsets.GenericViewSet):
             status=status.HTTP_200_OK
         )
 
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def submit_exercise(self, request):
+        """
+        will update history table.
+        inputs: exercise, char, data, profile_id
+        exercise are:-
+        drawing = 0, character/letters = 1, words = 2
+        """
+
+        exercise_type = request.data.get('exercise', None)
+        char = request.data.get('char', None)
+        data = request.data.get('data', None)
+        profile_id = request.data.get('profile_id', None)
+        time_str = time.strftime("%Y%m%d-%H%M%S")
+
+        stroke_path = get_stroke_path(data, profile_id, exercise_type, time_str)
+
+        if exercise_type == 0:  # drawing
+            stroke_score, similarity_score = attempt_score(char, data, exercise_type)
+            score = (stroke_score + similarity_score) // 2
+            if score > 50:
+                is_completed = True
+            is_completed = False
+            History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
+                                   stroke_score=stroke_score,
+                                   stroke_path=stroke_path,
+                                   time_taken=random.randint(1, 20),
+                                   datetime_attempt=timezone.now(),
+                                   similarity_score=similarity_score,
+                                   character_id=None,
+                                   coloring_id=None,
+                                   object_id=None,
+                                   is_completed=is_completed,
+                                   drawing_id=DrawingExercise.objects.get(label=char),
+                                   word_id=None
+                                   )
+
+        if exercise_type == 1:  # character
+            stroke_score, similarity_score = attempt_score(char, data, exercise_type)
+            score = (stroke_score + similarity_score) // 2
+            if score > 60:
+                is_completed = True
+            is_completed = False
+            History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
+                                   stroke_score=stroke_score,
+                                   stroke_path=stroke_path,
+                                   time_taken=random.randint(1, 20),
+                                   datetime_attempt=timezone.now(),
+                                   similarity_score=similarity_score,
+                                   character_id=Characters.objects.get(label=char),
+                                   coloring_id=None,
+                                   object_id=None,
+                                   is_completed=is_completed,
+                                   drawing_id=None,
+                                   word_id=None
+                                   )
+
+        if exercise_type == 2:  # words
+            stroke_score, similarity_score = attempt_score(char, data, exercise_type)
+            score = (stroke_score + similarity_score) // 2
+            if score > 50:
+                is_completed = True
+            is_completed = False
+            History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
+                                   stroke_score=stroke_score,
+                                   stroke_path=stroke_path,
+                                   time_taken=random.randint(1, 20),
+                                   datetime_attempt=timezone.now(),
+                                   similarity_score=similarity_score,
+                                   character_id=None,
+                                   coloring_id=None,
+                                   object_id=None,
+                                   is_completed=is_completed,
+                                   drawing_id=None,
+                                   word_id=WordsUrdu.objects.get(word_label=char)
+                                   )
+        return Response(
+            data={'score': score},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def check(self, request):
         return Response(
-            data=serializers.WordsUrduSerializer(
-               WordsUrdu.objects.all(), many=True).data,
+            data=serializers.HistorySerializer(
+                History.objects.all(), many=True).data,
             status=status.HTTP_204_NO_CONTENT
         )
     
