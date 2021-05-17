@@ -178,7 +178,7 @@ def object_word_to_db():
 
 
 def drawing_exercises_to_db(file_path):
-    GLOBAL_PATH = "https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aangan-filesystem/"
+    GLOBAL_PATH = "https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/drawing/aangan-filesystem/"
 
     """ Handles reading lines from a file and saving to the Database.
 
@@ -222,4 +222,4 @@ def main_pop():
         try:
             print('doiing......', f())
         except:
-            drawing_exercises_to_db('https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aangan-filesystem/file_dir.csv')
+            drawing_exercises_to_db('https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/drawing/aangan-filesystem/file_dir.csv')
