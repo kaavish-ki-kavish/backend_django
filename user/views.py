@@ -127,8 +127,8 @@ def attempt_score(char, data, exercise):
         
     print(scores)
 
-    stroke_score = random.randint(0, 100)
-    similarity_score = random.randint(0, 100)
+    # stroke_score = random.randint(0, 100)
+    # similarity_score = random.randint(0, 100)
     return stroke_score, similarity_score
 
 
