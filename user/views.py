@@ -984,7 +984,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                                    word_id=WordsUrdu.objects.get(word_label=char)
                                    )
         response = {
-            'message': msg,
+            'message': 'Successful',
             'prediction': score,
         }
         return Response(response)
