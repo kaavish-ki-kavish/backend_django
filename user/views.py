@@ -643,11 +643,11 @@ class AuthViewSet(viewsets.GenericViewSet):
                 urdu_dates.append(graph_val_time_urdu[i][0])
                 urdu_time.append(graph_val_time_urdu[i][1])
                 urdu_score.append(graph_val_score_urdu[i][1])
-
+            
+            plt.figure(figsize=(10, 6))
             plt.plot(draw_dates, draw_time, label='Drawing')
             plt.plot(urdu_dates, urdu_time, label='Urdu')
 
-            plt.rcParams["figure.figsize"] = (10, 6)
             plt.legend()
             plt.xticks(rotation=30)
             plt.title('Time Spent on Exercises')
@@ -662,11 +662,10 @@ class AuthViewSet(viewsets.GenericViewSet):
                 pass
 
             plt.clf()
+            plt.figure(figsize=(10, 6))
 
             plt.plot(draw_dates, draw_score, label='Drawing')
             plt.plot(urdu_dates, urdu_score, label='Urdu')
-
-            plt.rcParams["figure.figsize"] = (10, 6)
             plt.xticks(rotation=30)
             plt.legend()
             plt.title('Feedback Scores')
@@ -691,7 +690,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             exercise_name = ['Urdu', 'Drawing']
             exercise_completion = [completed_urdu, completed_drawing]
 
-            plt.rcParams["figure.figsize"] = (10, 6)
+            plt.figure(figsize=(10, 6))
             plt.barh(exercise_name, exercise_completion)
             plt.title('Exercise Completion')
             plt.xlabel('percentage completed')
