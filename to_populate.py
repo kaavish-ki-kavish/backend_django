@@ -209,7 +209,10 @@ def words_to_db():
     data_file.apply(upload_to_db, **kwargs, axis=1)
     print(f'Starting to upload {len(data_file.index)} records to Table... DONE.')
 
-
+def delete_dash():
+    from user.models import Dashoard 
+    Dashoard.objects.all().delete()
+    
 def main_pop():
     a = [words_to_db, characters_to_db, object_word_to_db, drawing_exercises_to_db]
     cluster_file = './populate_scripts/cluster.csv'

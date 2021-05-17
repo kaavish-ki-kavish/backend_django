@@ -540,7 +540,8 @@ class AuthViewSet(viewsets.GenericViewSet):
         days = request.data.get('days', 7)
         # child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
         latest_attempt_id = History.objects.values_list('attempt_id', flat=True).latest('attempt_id')
-        file_name = str(profile_id_child) + '_' + str(latest_attempt_id) + '.png'
+        time_str = ''# str(time.strftime("%Y%m%d-%H%M%S"))
+        file_name = str(profile_id_child) + '_' + str(latest_attempt_id) + '_' + time_str '.png'
         sns.set_style("darkgrid")
 
 
@@ -650,17 +651,15 @@ class AuthViewSet(viewsets.GenericViewSet):
 
             plt.legend()
             plt.xticks(rotation=30)
+            plt.xticks([])
             plt.title('Time Spent on Exercises')
-            plt.xlabel('date')
+            # plt.xlabel('date')
             plt.ylabel('time spent')
             figure_path = 'user/dashboard/time/'
             plt.savefig(figure_path + file_name)
             
-            try:
-                push_image_file('dashboard/time/' + file_name, file_name)
-            except:
-                pass
-
+            push_image_file('dashboard/time/' + file_name, file_name)
+            
             plt.clf()
             plt.figure(figsize=(10, 6))
 
@@ -675,11 +674,9 @@ class AuthViewSet(viewsets.GenericViewSet):
             figure_path = 'user/dashboard/score/'
             plt.savefig(figure_path + file_name)
             
-            try:
-                push_image_file('dashboard/score/' + file_name, file_name)
-            except:
-                pass
-
+            
+            push_image_file('dashboard/score/' + file_name, file_name)
+            
             plt.clf()
 
             drawing_total = DrawingExercise.objects.all().count()
@@ -689,7 +686,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             completed_urdu = int((urdu_completion * 100) / urdu_total)
 
             exercise_name = ['Urdu', 'Drawing']
-            exercise_completion = [completed_urdu, completed_drawing]
+            exercise_completion = [max(100, completed_urdu), max(100, completed_drawing)]
 
             plt.figure(figsize=(10, 6))
             plt.barh(exercise_name, exercise_completion)
@@ -697,10 +694,9 @@ class AuthViewSet(viewsets.GenericViewSet):
             plt.xlabel('percentage completed')
             figure_path = 'user/dashboard/completion/'
             plt.savefig(figure_path + file_name)
-            try:
-                push_image_file('dashboard/completion/' + file_name, file_name)
-            except:
-                pass
+            
+            push_image_file('dashboard/completion/' + file_name, file_name)
+            
             Dashoard.objects.create(time_path=dashboard_time_graph_path, score_path=dashboard_score_graph_path,
                                     completion_path=dashboard_completion_graph_path,
                                     profile_id=ChildProfile.objects.get(profile_id=profile_id_child))
