@@ -947,7 +947,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             score = (7 * stroke_score + 3 * similarity_score) / 10
             profile_character_id = Characters.objects.get(label=char.replace(' ', '-'))
             is_completed = False
-            if score > 0.60:
+            if score > 0.50:
                 is_completed = True
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
