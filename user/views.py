@@ -744,7 +744,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         filter_session = History.objects.filter(profile_id=profile_id_child)
         total_time_taken += sum(filter_session.values_list('time_taken', flat=True))
-        number_of_attempts += filter_session.values('attempt_id').count()
+        number_of_attempts += filter_session.count()
 
         if number_of_attempts == 0:
             avg_time_taken = 0
@@ -752,7 +752,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             avg_time_taken = total_time_taken / number_of_attempts
 
         return Response(
-            data={'avg_time_taken': int(avg_time_taken)},
+            data={'avg_time_taken': avg_time_taken},
             status=status.HTTP_200_OK
         )
 
