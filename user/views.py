@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import sys
 import requests
 import time
+import seaborn as sns
 
 # from django.shortcuts import render
 # from .apps import PredictorConfig
@@ -460,7 +461,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         """
         # child profile_id to session session_id to History character_id to Character sequence_id
 
-        profile_id= request.data.get('profile_id', None)
+        profile_id = request.data.get('profile_id', None)
 
         profile_char_hist = History.objects.filter(profile_id=profile_id).filter(character_id__isnull=False)
         History_attempt_id = profile_char_hist.latest('attempt_id')
@@ -473,6 +474,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                 next_exercise = latest_char_id + 1
 
             else:
+
                 feature_averages_queryset = (AttemptFeatures.objects.values('feature_id').annotate(avg=Avg('score')))
                 averages_lst = list(feature_averages_queryset.values_list('avg', flat=True))
                 feature_id_lst = list(feature_averages_queryset.values_list('feature_id', flat=True))
@@ -508,7 +510,6 @@ class AuthViewSet(viewsets.GenericViewSet):
             status=status.HTTP_200_OK
         )
 
-
     @action(methods=["GET"], detail=False)
     def generate_urdu_object_exercise(self, request):
         """
@@ -534,10 +535,12 @@ class AuthViewSet(viewsets.GenericViewSet):
         makes dashboard graphs for time, drawing, % completed. pushes them to github if they are not in database and returns their path. If they are in databse returns their path.
         """
         profile_id_child = request.data.get('profile_id', None)
-        days = request.data.get('days', None)
+        days = request.data.get('days', 7)
         # child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
         latest_attempt_id = History.objects.values_list('attempt_id', flat=True).latest('attempt_id')
         file_name = str(profile_id_child) + '_' + str(latest_attempt_id) + '.png'
+        sns.set_style("darkgrid")
+
 
         dashboard_time_graph_path = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/dashboard/time/' + file_name
         dashboard_score_graph_path = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/dashboard/score/' + file_name
@@ -567,7 +570,8 @@ class AuthViewSet(viewsets.GenericViewSet):
 
             # character, object non null
             urdu_completion = History.objects.filter(profile_id=profile_id_child).filter(
-                Q(character_id__isnull=False) | Q(object_id__isnull=False)).distinct().count()
+                Q(character_id__isnull=False) | Q(object_id__isnull=False) | Q(
+                    word_id__isnull=False)).distinct().count()
 
             # for each session_id getting  time taken
 
@@ -588,13 +592,13 @@ class AuthViewSet(viewsets.GenericViewSet):
             # URDU
 
             date_time_ex_urdu = History.objects.filter(profile_id=profile_id_child).filter(
-                Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
+                Q(character_id__isnull=False) | Q(object_id__isnull=False) | Q(word_id__isnull=False)).filter(
                 datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
             ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
 
             # for each session_id getting sum stroke score
             date_score_ex_urdu = History.objects.filter(profile_id=profile_id_child).filter(
-                Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
+                Q(character_id__isnull=False) | Q(object_id__isnull=False) | Q(word_id__isnull=False)).filter(
                 datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
             ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
 
@@ -611,6 +615,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                 graph_val_time_draw.append((draw_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), draw_time[j]))
                 graph_val_score_draw.append((draw_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), draw_score[j]))
 
+            for j in range(len(urdu_dates)):
                 # for urdu
                 graph_val_time_urdu.append((urdu_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), urdu_time[j]))
                 graph_val_score_urdu.append((urdu_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), urdu_score[j]))
@@ -640,7 +645,9 @@ class AuthViewSet(viewsets.GenericViewSet):
             plt.plot(draw_dates, draw_time, label='Drawing')
             plt.plot(urdu_dates, urdu_time, label='Urdu')
 
+            plt.rcParams["figure.figsize"] = (10, 6)
             plt.legend()
+            plt.xticks(rotation=30)
             plt.title('Time Spent on Exercises')
             plt.xlabel('date')
             plt.ylabel('time spent')
@@ -653,6 +660,9 @@ class AuthViewSet(viewsets.GenericViewSet):
 
             plt.plot(draw_dates, draw_score, label='Drawing')
             plt.plot(urdu_dates, urdu_score, label='Urdu')
+
+            plt.rcParams["figure.figsize"] = (10, 6)
+            plt.xticks(rotation=30)
             plt.legend()
             plt.title('Feedback Scores')
             plt.xlabel('date')
@@ -665,13 +675,15 @@ class AuthViewSet(viewsets.GenericViewSet):
             plt.clf()
 
             drawing_total = DrawingExercise.objects.all().count()
-            urdu_total = Characters.objects.all().count() + ObjectWord.objects.all().count()
+            urdu_total = Characters.objects.all().count() + ObjectWord.objects.all().count() + WordsUrdu.objects.all().count()
 
             completed_drawing = int((drawing_completion * 100) / drawing_total)
             completed_urdu = int((urdu_completion * 100) / urdu_total)
 
             exercise_name = ['Urdu', 'Drawing']
             exercise_completion = [completed_urdu, completed_drawing]
+
+            plt.rcParams["figure.figsize"] = (10, 6)
             plt.barh(exercise_name, exercise_completion)
             plt.title('Exercise Completion')
             plt.xlabel('percentage completed')
@@ -773,8 +785,8 @@ class AuthViewSet(viewsets.GenericViewSet):
             datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
         completed_exercises = filter_session.values('character_id').distinct().count() + \
                               filter_session.values('object_id').distinct().count() + \
-                              filter_session.values('drawing_id').distinct().count()
-
+                              filter_session.values('drawing_id').distinct().count() + \
+                              filter_session.values('word_id').distinct().count()
         return Response(
             data={'completed_exercises_sum': completed_exercises},
             status=status.HTTP_200_OK
