@@ -752,7 +752,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             avg_time_taken = total_time_taken / number_of_attempts
 
         return Response(
-            data={'avg_time_taken': avg_time_taken},
+            data={'avg_time_taken': round(avg_time_taken, 2)},
             status=status.HTTP_200_OK
         )
 
@@ -775,7 +775,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         if score_sum == 0:
             avg_score_sum = 0
         else:
-            avg_score_sum = round((score_sum / days), 2) * 100
+            avg_score_sum = round((score_sum / date_time_query.count()), 2) * 100
 
         return Response(
             data={'avg_score_sum': avg_score_sum},
