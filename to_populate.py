@@ -212,11 +212,14 @@ def words_to_db():
 
 
 def main_pop():
-    a = [characters_to_db, object_word_to_db, drawing_exercises_to_db]
+    a = [words_to_db, characters_to_db, object_word_to_db, drawing_exercises_to_db]
     cluster_file = './populate_scripts/cluster.csv'
     feature_file = './populate_scripts/feature.csv'
     cluster_to_db(cluster_file)
     feature_to_db(feature_file)
     cluster_feature_to_db(cluster_file, feature_file)
     for f in a:
-        print('doiing......', f())
+        try:
+            print('doiing......', f())
+        except:
+            drawing_exercises_to_db('https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aangan-filesystem/file_dir.csv')
