@@ -467,10 +467,10 @@ class AuthViewSet(viewsets.GenericViewSet):
         profile_id = request.data.get('profile_id', None)
 
         profile_char_hist = History.objects.filter(profile_id=profile_id).filter(character_id__isnull=False)
-        History_attempt_id = profile_char_hist.latest('attempt_id')
-        total_char_exercises = Characters.objects.all().count()
-
+        
         if profile_char_hist:
+            History_attempt_id = profile_char_hist.latest('attempt_id')
+            total_char_exercises = Characters.objects.all().count()
             count_is_completed = profile_char_hist.filter(is_completed=True).count()
             if count_is_completed < total_char_exercises:
                 latest_char_id = profile_char_hist.latest('word_id').character_id.sequence_id
