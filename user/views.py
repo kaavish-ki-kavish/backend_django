@@ -802,7 +802,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         Output is exercise review for characters.
         '''
         profile_id_child = request.data.get('profile_id', None)
-        to_display_no = request.data.get('to_display_no', 6)
+        to_display_no = request.data.get('to_display_no', 20)
 
         urdu_letter = History.objects.filter(profile_id=profile_id_child).filter(Q(character_id__isnull=False))
 
@@ -812,9 +812,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             lst_urdu_character_datetime = i.datetime_attempt
             lst_urdu_character_attempt = History.objects.filter(character_id=i.character_id).count()
             lst_urdu_character_timetaken = i.time_taken
-            lst_urdu_character_image = \
-                Characters.objects.filter(character_id=i.character_id.character_id).values_list('ref_stroke_path',
-                                                                                                flat=True)[0]
+            lst_urdu_character_image = i.stroke_path 
 
             lst_urdu_char.append((lst_urdu_character_datetime, lst_urdu_character_image, lst_urdu_character_score,
                                   lst_urdu_character_timetaken, lst_urdu_character_attempt))
@@ -873,7 +871,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         Output is exercise review for drawing.
         '''
         profile_id_child = request.data.get('profile_id', None)
-        to_display_no = request.data.get('to_display_no', 6)
+        to_display_no = request.data.get('to_display_no', 20)
         drawing_ex = History.objects.filter(profile_id=profile_id_child).filter(Q(drawing_id__isnull=False))
 
         lst_drawing_ex = []
@@ -882,9 +880,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             lst_drawing_ex_datetime = i.datetime_attempt
             lst_drawing_ex_attempt = History.objects.filter(drawing_id=i.drawing_id).count()
             lst_drawing_ex_timetaken = i.time_taken
-            lst_drawing_ex_image = \
-                DrawingExercise.objects.filter(drawing_id=i.drawing_id.drawing_id).values_list('ref_stroke_path',
-                                                                                               flat=True)[0]
+            lst_drawing_ex_image = i.stroke_pat                                                           flat=True)[0]
 
             lst_drawing_ex.append((lst_drawing_ex_datetime, lst_drawing_ex_image, lst_drawing_ex_score,
                                    lst_drawing_ex_timetaken, lst_drawing_ex_attempt))
@@ -947,7 +943,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             score = (7 * stroke_score + 3 * similarity_score) / 10
             profile_character_id = Characters.objects.get(label=char.replace(' ', '-'))
             is_completed = False
-            if score > 0.50:
+            if score > 0.5:
                 is_completed = True
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
