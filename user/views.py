@@ -945,7 +945,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         if exercise_type == 1:  # character
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
             score = (stroke_score + similarity_score) / 2
-            profile_character_id = Characters.objects.get(label=char)
+            profile_character_id = Characters.objects.get(label=char.replace(' ', '-'))
             is_completed = False
             if score > 0.60:
                 is_completed = True
