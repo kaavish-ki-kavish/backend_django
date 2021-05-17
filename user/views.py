@@ -967,6 +967,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         if exercise_type == 2:  # words
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
             score = (stroke_score + similarity_score) // 2
+            print('score in submit', stroke_score, similarity_score, score)
             is_completed = False
             if score > 0.5:
                 is_completed = True
