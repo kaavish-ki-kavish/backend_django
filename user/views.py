@@ -473,7 +473,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             total_char_exercises = Characters.objects.all().count()
             count_is_completed = profile_char_hist.filter(is_completed=True).count()
             if count_is_completed < total_char_exercises:
-                latest_char_id = profile_char_hist.latest('word_id').character_id.sequence_id
+                latest_char_id = profile_char_hist.latest('character_id').character_id.sequence_id
                 next_exercise = latest_char_id + 1
 
             else:
@@ -505,7 +505,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                 )
 
         else:
-            next_exercise = WordsUrdu.objects.all().first().sequence_id
+            next_exercise = Characters.objects.all().first().sequence_id
 
         return Response(
             data=serializers.CharactersSerializer(
