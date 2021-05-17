@@ -880,7 +880,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             lst_drawing_ex_datetime = i.datetime_attempt
             lst_drawing_ex_attempt = History.objects.filter(drawing_id=i.drawing_id).count()
             lst_drawing_ex_timetaken = i.time_taken
-            lst_drawing_ex_image = i.stroke_pat                                                           flat=True)[0]
+            lst_drawing_ex_image = i.stroke_path                                                         flat=True)[0]
 
             lst_drawing_ex.append((lst_drawing_ex_datetime, lst_drawing_ex_image, lst_drawing_ex_score,
                                    lst_drawing_ex_timetaken, lst_drawing_ex_attempt))
