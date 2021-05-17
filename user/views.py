@@ -655,8 +655,11 @@ class AuthViewSet(viewsets.GenericViewSet):
             plt.ylabel('time spent')
             figure_path = 'user/dashboard/time/'
             plt.savefig(figure_path + file_name)
-
-            push_image_file('dashboard/time/' + file_name, file_name)
+            
+            try:
+                push_image_file('dashboard/time/' + file_name, file_name)
+            except:
+                pass
 
             plt.clf()
 
@@ -671,8 +674,11 @@ class AuthViewSet(viewsets.GenericViewSet):
             plt.ylabel('score')
             figure_path = 'user/dashboard/score/'
             plt.savefig(figure_path + file_name)
-
-            push_image_file('dashboard/score/' + file_name, file_name)
+            
+            try:
+                push_image_file('dashboard/score/' + file_name, file_name)
+            except:
+                pass
 
             plt.clf()
 
@@ -691,9 +697,10 @@ class AuthViewSet(viewsets.GenericViewSet):
             plt.xlabel('percentage completed')
             figure_path = 'user/dashboard/completion/'
             plt.savefig(figure_path + file_name)
-
-            push_image_file('dashboard/completion/' + file_name, file_name)
-
+            try:
+                push_image_file('dashboard/completion/' + file_name, file_name)
+            except:
+                pass
             Dashoard.objects.create(time_path=dashboard_time_graph_path, score_path=dashboard_score_graph_path,
                                     completion_path=dashboard_completion_graph_path,
                                     profile_id=ChildProfile.objects.get(profile_id=profile_id_child))
