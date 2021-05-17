@@ -53,10 +53,15 @@ class UrduCnnScorer:
         self.x = x
         self.y = y
         self.penup = penups
-        self.NUM2LABEL = ['alif', 'alif mad aa', 'ayn', 'baa', 'bari yaa', 'cheey', 'choti yaa', 'daal', 'dhaal', 'faa',
+        # self.NUM2LABEL = ['alif', 'alif mad aa', 'ayn', 'baa', 'bari yaa', 'cheey', 'choti yaa', 'daal', 'dhaal', 'faa',
+        #                   'gaaf', 'ghain', 'haa1', 'haa2', 'haa3', 'hamza', 'jeem', 'kaaf', 'khaa', 'laam', 'meem',
+        #                   'noon', 'noonghunna', 'paa', 'qaaf', 'raa', 'rhraa', 'seen', 'seey', 'sheen', 'swaad', 'taa',
+        #                   'ttaa', 'twa', 'waw', 'zaaa', 'zaal', 'zhaa', 'zwaa', 'zwaad']
+        self.NUM2LABEL = ['alif', 'alif-mad-aa', 'ayn', 'baa', 'bari-yaa', 'cheey', 'choti-yaa', 'daal', 'dhaal', 'faa',
                           'gaaf', 'ghain', 'haa1', 'haa2', 'haa3', 'hamza', 'jeem', 'kaaf', 'khaa', 'laam', 'meem',
                           'noon', 'noonghunna', 'paa', 'qaaf', 'raa', 'rhraa', 'seen', 'seey', 'sheen', 'swaad', 'taa',
                           'ttaa', 'twa', 'waw', 'zaaa', 'zaal', 'zhaa', 'zwaa', 'zwaad']
+
 
     def preprocessing(self):
         x_0, y_0 = min(self.x), min(self.y)
