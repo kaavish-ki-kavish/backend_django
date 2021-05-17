@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from django.db.models import Q
 from django.utils import timezone
-from django.db.models import Sum, Count, Max, Min, F
+from django.db.models import Sum, Count, Max, Min, F, Avg
 import os, datetime, random, copy
 
 from .models import ChildProfile, Characters, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import sys
 import requests
 import time
+import seaborn as sns
 
 # from django.shortcuts import render
 # from .apps import PredictorConfig
@@ -463,68 +464,54 @@ class AuthViewSet(viewsets.GenericViewSet):
         """
         # child profile_id to session session_id to History character_id to Character sequence_id
 
-        profile_id_stroke = request.data.get('profile_id', None)
-        is_seq = request.data.get('is_seq', None)
-        profile_session_id = Session.objects.values_list('session_id', flat=True).filter(
-            profile_id=profile_id_stroke).latest('session_id')
-        profile_session_character_id = History.objects.values_list('character_id', flat=True).filter(
-            session_id=profile_session_id).latest('character_id')
+        profile_id = request.data.get('profile_id', None)
 
-        History_attempt_id = History.objects.filter(session_id=profile_session_id).latest('attempt_id')
+        profile_char_hist = History.objects.filter(profile_id=profile_id).filter(character_id__isnull=False)
+        History_attempt_id = profile_char_hist.latest('attempt_id')
+        total_char_exercises = Characters.objects.all().count()
 
-        if is_seq == 1:
-            character_sequence_id = Characters.objects.values_list('sequence_id', flat=True).filter(
-                character_id=profile_session_character_id).latest('sequence_id')
+        if profile_char_hist:
+            count_is_completed = profile_char_hist.filter(is_completed=True).count()
+            if count_is_completed < total_char_exercises:
+                latest_char_id = profile_char_hist.latest('word_id').character_id.sequence_id
+                next_exercise = latest_char_id + 1
 
-            return Response(
-                data=serializers.CharactersSerializer(
-                    Characters.objects.filter(sequence_id=character_sequence_id + 1)[:1], many=True).data,
-                status=status.HTTP_200_OK
-            )
+            else:
+
+                feature_averages_queryset = (AttemptFeatures.objects.values('feature_id').annotate(avg=Avg('score')))
+                averages_lst = list(feature_averages_queryset.values_list('avg', flat=True))
+                feature_id_lst = list(feature_averages_queryset.values_list('feature_id', flat=True))
+                sorted_averages_list = sorted(averages_lst)
+                if len(sorted_averages_list) > 3:
+                    sorted_averages_list = sorted_averages_list[:3]
+
+                # selecting random feature from min 3 avg score
+
+                features_min_score = Features.objects.get(
+                    feature_id=feature_id_lst[averages_lst.index(random.choice(sorted_averages_list))])
+                cluster_feature_id = list(
+                    ClusterFeature.objects.filter(feature_id=features_min_score).values_list('cluster_id', flat=True))
+
+                # randomly choosing cluster
+                cluster_feature_id = random.choice(cluster_feature_id)
+                cluster_cluster_id = Clusters.objects.get(cluster_id=cluster_feature_id)
+                character_cluster = list(
+                    Characters.objects.filter(cluster_id=cluster_cluster_id).values_list('character_id', flat=True))
+
+                return Response(
+                    data=serializers.CharactersSerializer(
+                        Characters.objects.filter(character_id=random.choice(character_cluster)), many=True).data,
+                    status=status.HTTP_200_OK
+                )
+
         else:
+            next_exercise = WordsUrdu.objects.all().first().sequence_id
 
-            feature_score_vector = feature_model_pseudo("pseudo_path")
-            character_cluster_id = Characters.objects.values_list('cluster_id', flat=True).filter(
-                character_id=profile_session_character_id).latest('cluster_id')
-
-            cluster_feature_id = list(
-                ClusterFeature.objects.filter(cluster_id=character_cluster_id).values_list('feature_id',
-                                                                                           flat=True))
-            ## populating attept_feature with feature ids and score
-
-            for i in cluster_feature_id:
-                AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i),
-                                               score=feature_score_vector[i - 1],
-                                               attempt_id=History_attempt_id)
-
-            # finding average score of feature_id
-            from django.db.models import Avg
-
-            feature_averages_queryset = (AttemptFeatures.objects.values('feature_id').annotate(avg=Avg('score')))
-            averages_lst = list(feature_averages_queryset.values_list('avg', flat=True))
-            feature_id_lst = list(feature_averages_queryset.values_list('feature_id', flat=True))
-            sorted_averages_list = sorted(averages_lst)
-            if len(sorted_averages_list) > 3:
-                sorted_averages_list = sorted_averages_list[:3]
-
-            # selecting random feature from min 3 avg score
-
-            features_min_score = Features.objects.get(
-                feature_id=feature_id_lst[averages_lst.index(random.choice(sorted_averages_list))])
-            cluster_feature_id = list(
-                ClusterFeature.objects.filter(feature_id=features_min_score).values_list('cluster_id', flat=True))
-
-            # randomly choosing cluster
-            cluster_feature_id = random.choice(cluster_feature_id)
-            cluster_cluster_id = Clusters.objects.get(cluster_id=cluster_feature_id)
-            character_cluster = list(
-                Characters.objects.filter(cluster_id=cluster_cluster_id).values_list('character_id', flat=True))
-
-            return Response(
-                data=serializers.CharactersSerializer(
-                    Characters.objects.filter(character_id=random.choice(character_cluster)), many=True).data,
-                status=status.HTTP_200_OK
-            )
+        return Response(
+            data=serializers.CharactersSerializer(
+                Characters.objects.filter(sequence_id=next_exercise), many=True).data,
+            status=status.HTTP_200_OK
+        )
 
     @action(methods=["GET"], detail=False)
     def generate_urdu_object_exercise(self, request):
@@ -550,10 +537,12 @@ class AuthViewSet(viewsets.GenericViewSet):
         makes dashboard graphs for time, drawing, % completed. pushes them to github if they are not in database and returns their path. If they are in databse returns their path.
         """
         profile_id_child = request.data.get('profile_id', None)
-        days = request.data.get('days', None)
+        days = request.data.get('days', 7)
         # child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
         latest_attempt_id = History.objects.values_list('attempt_id', flat=True).latest('attempt_id')
         file_name = str(profile_id_child) + '_' + str(latest_attempt_id) + '.png'
+        sns.set_style("darkgrid")
+
 
         dashboard_time_graph_path = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/dashboard/time/' + file_name
         dashboard_score_graph_path = 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/dashboard/score/' + file_name
@@ -583,7 +572,8 @@ class AuthViewSet(viewsets.GenericViewSet):
 
             # character, object non null
             urdu_completion = History.objects.filter(profile_id=profile_id_child).filter(
-                Q(character_id__isnull=False) | Q(object_id__isnull=False)).distinct().count()
+                Q(character_id__isnull=False) | Q(object_id__isnull=False) | Q(
+                    word_id__isnull=False)).distinct().count()
 
             # for each session_id getting  time taken
 
@@ -604,13 +594,13 @@ class AuthViewSet(viewsets.GenericViewSet):
             # URDU
 
             date_time_ex_urdu = History.objects.filter(profile_id=profile_id_child).filter(
-                Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
+                Q(character_id__isnull=False) | Q(object_id__isnull=False) | Q(word_id__isnull=False)).filter(
                 datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
             ).values('datetime_attempt').annotate(data_sum=Sum('time_taken'))
 
             # for each session_id getting sum stroke score
             date_score_ex_urdu = History.objects.filter(profile_id=profile_id_child).filter(
-                Q(character_id__isnull=False) | Q(object_id__isnull=False)).filter(
+                Q(character_id__isnull=False) | Q(object_id__isnull=False) | Q(word_id__isnull=False)).filter(
                 datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now())
             ).values('datetime_attempt').annotate(data_sum=Sum('stroke_score'))
 
@@ -627,6 +617,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                 graph_val_time_draw.append((draw_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), draw_time[j]))
                 graph_val_score_draw.append((draw_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), draw_score[j]))
 
+            for j in range(len(urdu_dates)):
                 # for urdu
                 graph_val_time_urdu.append((urdu_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), urdu_time[j]))
                 graph_val_score_urdu.append((urdu_dates[j].strftime("%d-%B-%Y  %H:%M:%S"), urdu_score[j]))
@@ -656,7 +647,9 @@ class AuthViewSet(viewsets.GenericViewSet):
             plt.plot(draw_dates, draw_time, label='Drawing')
             plt.plot(urdu_dates, urdu_time, label='Urdu')
 
+            plt.rcParams["figure.figsize"] = (10, 6)
             plt.legend()
+            plt.xticks(rotation=30)
             plt.title('Time Spent on Exercises')
             plt.xlabel('date')
             plt.ylabel('time spent')
@@ -669,6 +662,9 @@ class AuthViewSet(viewsets.GenericViewSet):
 
             plt.plot(draw_dates, draw_score, label='Drawing')
             plt.plot(urdu_dates, urdu_score, label='Urdu')
+
+            plt.rcParams["figure.figsize"] = (10, 6)
+            plt.xticks(rotation=30)
             plt.legend()
             plt.title('Feedback Scores')
             plt.xlabel('date')
@@ -681,13 +677,15 @@ class AuthViewSet(viewsets.GenericViewSet):
             plt.clf()
 
             drawing_total = DrawingExercise.objects.all().count()
-            urdu_total = Characters.objects.all().count() + ObjectWord.objects.all().count()
+            urdu_total = Characters.objects.all().count() + ObjectWord.objects.all().count() + WordsUrdu.objects.all().count()
 
             completed_drawing = int((drawing_completion * 100) / drawing_total)
             completed_urdu = int((urdu_completion * 100) / urdu_total)
 
             exercise_name = ['Urdu', 'Drawing']
             exercise_completion = [completed_urdu, completed_drawing]
+
+            plt.rcParams["figure.figsize"] = (10, 6)
             plt.barh(exercise_name, exercise_completion)
             plt.title('Exercise Completion')
             plt.xlabel('percentage completed')
@@ -789,8 +787,8 @@ class AuthViewSet(viewsets.GenericViewSet):
             datetime_attempt__range=(timezone.now() - datetime.timedelta(days=days), timezone.now()))
         completed_exercises = filter_session.values('character_id').distinct().count() + \
                               filter_session.values('object_id').distinct().count() + \
-                              filter_session.values('drawing_id').distinct().count()
-
+                              filter_session.values('drawing_id').distinct().count() + \
+                              filter_session.values('word_id').distinct().count()
         return Response(
             data={'completed_exercises_sum': completed_exercises},
             status=status.HTTP_200_OK
@@ -947,6 +945,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         if exercise_type == 1:  # character
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
             score = (stroke_score + similarity_score) / 2
+            profile_character_id = Characters.objects.get(label=char)
             is_completed = False
             if score > 0.60:
                 is_completed = True
@@ -956,13 +955,28 @@ class AuthViewSet(viewsets.GenericViewSet):
                                    time_taken=random.randint(1, 20),
                                    datetime_attempt=timezone.now(),
                                    similarity_score=similarity_score,
-                                   character_id=Characters.objects.get(label=char),
+                                   character_id=profile_character_id,
                                    coloring_id=None,
                                    object_id=None,
                                    is_completed=is_completed,
                                    drawing_id=None,
                                    word_id=None
                                    )
+
+            History_attempt_id = History.objects.latest('attempt_id')
+            feature_score_vector = feature_model_pseudo("pseudo_path")  # THIS WILL BE CHANGED AS THIS IS A RANDOM ARRAY
+            character_cluster_id = Characters.objects.values_list('cluster_id', flat=True).filter(
+                character_id=profile_character_id.character_id).latest('cluster_id')
+
+            cluster_feature_id = list(
+                ClusterFeature.objects.filter(cluster_id=character_cluster_id).values_list('feature_id',
+                                                                                           flat=True))
+            ## populating attept_feature with feature ids and score
+
+            for i in cluster_feature_id:
+                AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i),
+                                               score=feature_score_vector[i - 1],
+                                               attempt_id=History_attempt_id)
 
         if exercise_type == 2:  # words
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
@@ -997,7 +1011,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                 History.objects.all(), many=True).data,
             status=status.HTTP_200_OK
         )
-    
+
     @action(methods=['GET'], detail=False)
     def insert_data(self, request):
         words = ['alif', 'ttaa', 'paa', 'seey', 'baa', 'taa', 'daal', 'zaal', 'dhaal', 'seen', 'sheen', 'zwaad',
@@ -1017,7 +1031,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                           word_id=None
                           )
             His.save()
-            
+
         for i in range(1, 5):
             His = History(profile_id=ChildProfile.objects.get(profile_id=i),
                           stroke_score=random.random(),
@@ -1033,7 +1047,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                           word_id=None
                           )
             His.save()
-    
+
         for i in range(1, 5):
             His = History(profile_id=ChildProfile.objects.get(profile_id=i),
                           stroke_score=random.random(),
@@ -1049,7 +1063,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                           word_id=WordsUrdu.objects.get(word_id=i),
                           )
             His.save()
-    
+
         return Response(
             data=serializers.HistorySerializer(
                 History.objects.all(), many=True).data,
