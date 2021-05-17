@@ -196,7 +196,6 @@ def drawing_exercises_to_db(file_path):
     data_file.apply(upload_to_db, **kwargs, axis=1)
     print(f'Starting to upload {len(data_file.index)} records to Drawing Table... DONE.')
 
-
 def words_to_db():
     """
     populated WordsUrdu table

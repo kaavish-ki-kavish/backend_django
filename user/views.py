@@ -729,7 +729,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         time_taken_sum += sum(date_time_query.values_list('time_taken', flat=True))
 
         return Response(
-            data={'time_taken_sum': time_taken_sum},
+            data={'time_taken_sum': int(time_taken_sum/10)},
             status=status.HTTP_200_OK
         )
 
@@ -752,7 +752,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             avg_time_taken = total_time_taken / number_of_attempts
 
         return Response(
-            data={'avg_time_taken': round(avg_time_taken, 2)},
+            data={'avg_time_taken': round(avg_time_taken/10, 2)},
             status=status.HTTP_200_OK
         )
 
