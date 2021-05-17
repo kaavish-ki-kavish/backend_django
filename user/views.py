@@ -541,7 +541,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         # child_all_sessions = Session.objects.filter(profile_id=profile_id_child).values_list('session_id', flat=True)
         latest_attempt_id = History.objects.values_list('attempt_id', flat=True).latest('attempt_id')
         time_str = ''# str(time.strftime("%Y%m%d-%H%M%S"))
-        file_name = str(profile_id_child) + '_' + str(latest_attempt_id) + '_' + time_str '.png'
+        file_name = str(profile_id_child) + '_' + str(latest_attempt_id) + '_' + time_str + '.png'
         sns.set_style("darkgrid")
 
 
