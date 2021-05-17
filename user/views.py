@@ -669,7 +669,8 @@ class AuthViewSet(viewsets.GenericViewSet):
             plt.xticks(rotation=30)
             plt.legend()
             plt.title('Feedback Scores')
-            plt.xlabel('date')
+            # plt.xlabel('date')
+            plt.xaxis('off')
             plt.ylabel('score')
             figure_path = 'user/dashboard/score/'
             plt.savefig(figure_path + file_name)
