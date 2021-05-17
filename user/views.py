@@ -686,7 +686,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             completed_urdu = int((urdu_completion * 100) / urdu_total)
 
             exercise_name = ['Urdu', 'Drawing']
-            exercise_completion = [max(100, completed_urdu), max(100, completed_drawing)]
+            exercise_completion = [min(100, completed_urdu), min(100, completed_drawing)]
 
             plt.figure(figsize=(10, 6))
             plt.barh(exercise_name, exercise_completion)
