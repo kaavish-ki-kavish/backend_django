@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from django.db.models import Q
 from django.utils import timezone
-from django.db.models import Sum, Count, Max, Min, F
+from django.db.models import Sum, Count, Max, Min, F, Avg
 import os, datetime, random, copy
 
 from .models import ChildProfile, Characters, History, ObjectWord, ColoringExercise, DrawingExercise, Clusters, \
@@ -46,8 +46,88 @@ def feature_model_pseudo(file_path):
 
 
 def attempt_score(char, data, exercise):
-    stroke_score = random.randint(0, 100)
-    similarity_score = random.randint(0, 100)
+    scores = []
+    whole_x, whole_y, penup = get_whole_stroke(data)
+
+    url = 'http://aangantf.herokuapp.com/api/auth/get_score'
+
+    if exercise == 0:  # drawing
+        tf_data = {
+            'exercise': 0,
+            'char': char,
+            'img': [[0, 0]],
+            'whole_x': whole_x,
+            'whole_y': whole_y,
+            'pen_up': list(penup),
+            'data': data
+        }
+        # response = requests.post(url, json=tf_data)
+        # print(response)
+        # print(type(response))
+        # sys.stdout.flush()
+        # print(response.json()['scores'])
+        # sys.stdout.flush()
+        # a = response.json()['scores'][0]  # feature_scorer(img, p_features,s_features, verbose= 1)
+        # b = response.json()['scores'][1]  # stroke(whole_x, whole_y, penup, char)
+        # scores.append(a)
+        # scores.append(b)
+
+
+
+    elif exercise == 1:  # urdu letters
+        scorer = UrduCnnScorer(whole_x, whole_y, penup)
+        label = scorer.NUM2LABEL.index(char)
+        img = scorer.preprocessing()
+        print(img.shape)
+        # scores.append(scorer.test_img(img)[0, label])
+
+        tf_data = {
+            'exercise': 1,
+            'char': char,
+            'img': img.tolist(),
+            'whole_x': whole_x,
+            'whole_y': whole_y,
+            'pen_up': list(penup),
+            'data': data
+        }
+        #
+        # response = requests.post(url, json=tf_data)
+        # print(response)
+        # print(type(response))
+        # sys.stdout.flush()
+        # print(response.json()['scores'])
+        # sys.stdout.flush()
+        # # p_features, s_features = get_feature_vector(char)
+        # a = response.json()['scores'][0]  # feature_scorer(img, p_features,s_features, verbose= 1)
+        # b = response.json()['scores'][1]  # perfect_scorer(whole_x, whole_y, penup, char)
+        # scores.append(a)
+        # scores.append(b)
+
+
+    elif exercise == 2:
+
+        tf_data = {
+            'exercise': 2,
+            'char': char,
+            'img': np.zeros((28, 28)).tolist(),
+            'whole_x': whole_x,
+            'whole_y': whole_y,
+            'pen_up': list(penup),
+            'data': data
+        }
+
+        # response = requests.post(url, json=tf_data)
+        # a = response.json()['scores'][0]
+        # b = a
+        # scores.append(a)
+
+    # stroke_score = b
+    # similarity_score = a  # CNN
+
+    # print(scores)
+
+    stroke_score = random.uniform(0, 1)
+    similarity_score = random.uniform(0, 1)
     return stroke_score, similarity_score
 
 
@@ -98,7 +178,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data['new_password'])
         request.user.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
 
     def get_serializer_class(self):
         if not isinstance(self.serializer_classes, dict):
@@ -115,13 +195,13 @@ class AuthViewSet(viewsets.GenericViewSet):
         create_child_profile(request.user, **serializer.validated_data)
         return Response(
             data=serializers.ChildRegisterSerializer(ChildProfile.objects.filter(user_id=request.user), many=True).data,
-            status=status.HTTP_204_NO_CONTENT)
+            status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def get_all_child(self, request):
         return Response(
             data=serializers.ChildRegisterSerializer(ChildProfile.objects.filter(user_id=request.user), many=True).data,
-            status=status.HTTP_204_NO_CONTENT)
+            status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def delete_child(self, request):
@@ -130,19 +210,19 @@ class AuthViewSet(viewsets.GenericViewSet):
         delete_child_profile(**serializer.validated_data)
         return Response(
             data=serializers.ChildRegisterSerializer(ChildProfile.objects.filter(user_id=request.user), many=True).data,
-            status=status.HTTP_204_NO_CONTENT)
+            status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
     def get_most_recent_child(self, request):
         return Response(data=serializers.ChildRegisterSerializer(
-            ChildProfile.objects.filter(user_id=request.user).all().last()).data, status=status.HTTP_204_NO_CONTENT)
+            ChildProfile.objects.filter(user_id=request.user).all().last()).data, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def edit_child(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         edit_child_profile(**serializer.validated_data, parent=request.user.pk)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
     def get_prediction_drawing(self, request):
@@ -188,38 +268,38 @@ class AuthViewSet(viewsets.GenericViewSet):
             random.random() * number_of_records) + 1
         random_exercise = DrawingExercise.objects.get(pk=record_id)
         serializer = serializers.DrawingExerciseSerializer
-        return Response(data=serializer(random_exercise).data, status=status.HTTP_204_NO_CONTENT)
+        return Response(data=serializer(random_exercise).data, status=status.HTTP_200_OK)
 
-    # @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
-    # def save_stroke(self, request):
-    #     x = request.data.get('x', None)
-    #     y = request.data.get('y', None)
-    #     profile_id_stroke = request.data.get('profile_id', None)
-    #
-    #     stroke_session_id = Session.objects.values_list('session_id', flat=True).filter(
-    #         profile_id=profile_id_stroke).latest('session_id')
-    #     stroke_attempt_id = History.objects.values_list('attempt_id', flat=True).filter(
-    #         session_id=stroke_session_id).latest('attempt_id')
-    #
-    #     stroke_name = str(profile_id_stroke) + '_' + str(stroke_attempt_id) + '.txt'
-    #     path = 'strokes/' + stroke_name
-    #
-    #     f = open(os.path.join(__location__, path), 'w')
-    #     f.write('x' + '\n')
-    #     for x_cord in x:
-    #         f.write(str(x_cord) + '\n')
-    #     f.write('y' + '\n')
-    #     for y_cord in y:
-    #         f.write(str(y_cord) + '\n')
-    #     f.close()
-    #
-    #     push_file('aangan-filesystem', path, stroke_name)
-    #
-    #     return Response(
-    #         data={
-    #             'stroke_path': 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/strokes/' + stroke_name},
-    #         status=status.HTTP_204_NO_CONTENT
-    #     )
+    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    def save_stroke(self, request):
+        x = request.data.get('x', None)
+        y = request.data.get('y', None)
+        profile_id_stroke = request.data.get('profile_id', None)
+
+        stroke_session_id = Session.objects.values_list('session_id', flat=True).filter(
+            profile_id=profile_id_stroke).latest('session_id')
+        stroke_attempt_id = History.objects.values_list('attempt_id', flat=True).filter(
+            session_id=stroke_session_id).latest('attempt_id')
+
+        stroke_name = str(profile_id_stroke) + '_' + str(stroke_attempt_id) + '.txt'
+        path = 'strokes/' + stroke_name
+
+        f = open(os.path.join(__location__, path), 'w')
+        f.write('x' + '\n')
+        for x_cord in x:
+            f.write(str(x_cord) + '\n')
+        f.write('y' + '\n')
+        for y_cord in y:
+            f.write(str(y_cord) + '\n')
+        f.close()
+
+        push_file('aangan-filesystem', path, stroke_name)
+
+        return Response(
+            data={
+                'stroke_path': 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/strokes/' + stroke_name},
+            status=status.HTTP_200_OK
+        )
 
     @action(methods=['POST'], detail=False)
     def get_score(self, request):
@@ -241,7 +321,8 @@ class AuthViewSet(viewsets.GenericViewSet):
                 'img': [[0, 0]],
                 'whole_x': whole_x,
                 'whole_y': whole_y,
-                'pen_up': list(penup)
+                'pen_up': list(penup),
+                'data': data['data']
             }
             response = requests.post(url, json=tf_data)
             print(response)
@@ -261,7 +342,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             label = scorer.NUM2LABEL.index(char)
             img = scorer.preprocessing()
             print(img.shape)
-            scores.append(scorer.test_img(img)[0, label])
+            # scores.append(scorer.test_img(img)[0, label])
 
             tf_data = {
                 'exercise': 1,
@@ -269,7 +350,8 @@ class AuthViewSet(viewsets.GenericViewSet):
                 'img': img.tolist(),
                 'whole_x': whole_x,
                 'whole_y': whole_y,
-                'pen_up': list(penup)
+                'pen_up': list(penup),
+                'data': data['data']
             }
 
             response = requests.post(url, json=tf_data)
@@ -283,6 +365,21 @@ class AuthViewSet(viewsets.GenericViewSet):
             b = response.json()['scores'][1]  # perfect_scorer(whole_x, whole_y, penup, char)
             scores.append(a)
             scores.append(b)
+        elif data['exercise'] == 2:
+
+            tf_data = {
+                'exercise': 2,
+                'char': char,
+                'img': np.zeros((28, 28)).tolist(),
+                'whole_x': whole_x,
+                'whole_y': whole_y,
+                'pen_up': list(penup),
+                'data': data['data']
+            }
+
+            response = requests.post(url, json=tf_data)
+            a = response.json()['scores'][0]
+            scores.append(a)
 
         print(scores)
         response = {
@@ -317,7 +414,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(
             data=serializers.DrawingExerciseSerializer(
                 DrawingExercise.objects.filter(drawing_id=next_exercise), many=True).data,
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -346,7 +443,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(
             data=serializers.WordsUrduSerializer(
                 WordsUrdu.objects.filter(word_id=next_exercise), many=True).data,
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -363,68 +460,54 @@ class AuthViewSet(viewsets.GenericViewSet):
         """
         # child profile_id to session session_id to History character_id to Character sequence_id
 
-        profile_id_stroke = request.data.get('profile_id', None)
-        is_seq = request.data.get('is_seq', None)
-        profile_session_id = Session.objects.values_list('session_id', flat=True).filter(
-            profile_id=profile_id_stroke).latest('session_id')
-        profile_session_character_id = History.objects.values_list('character_id', flat=True).filter(
-            session_id=profile_session_id).latest('character_id')
+        profile_id= request.data.get('profile_id', None)
 
-        History_attempt_id = History.objects.filter(session_id=profile_session_id).latest('attempt_id')
+        profile_char_hist = History.objects.filter(profile_id=profile_id).filter(character_id__isnull=False)
+        History_attempt_id = profile_char_hist.latest('attempt_id')
+        total_char_exercises = Characters.objects.all().count()
 
-        if is_seq == 1:
-            character_sequence_id = Characters.objects.values_list('sequence_id', flat=True).filter(
-                character_id=profile_session_character_id).latest('sequence_id')
+        if profile_char_hist:
+            count_is_completed = profile_char_hist.filter(is_completed=True).count()
+            if count_is_completed < total_char_exercises:
+                latest_char_id = profile_char_hist.latest('word_id').character_id.sequence_id
+                next_exercise = latest_char_id + 1
 
-            return Response(
-                data=serializers.CharactersSerializer(
-                    Characters.objects.filter(sequence_id=character_sequence_id + 1)[:1], many=True).data,
-                status=status.HTTP_204_NO_CONTENT
-            )
+            else:
+                feature_averages_queryset = (AttemptFeatures.objects.values('feature_id').annotate(avg=Avg('score')))
+                averages_lst = list(feature_averages_queryset.values_list('avg', flat=True))
+                feature_id_lst = list(feature_averages_queryset.values_list('feature_id', flat=True))
+                sorted_averages_list = sorted(averages_lst)
+                if len(sorted_averages_list) > 3:
+                    sorted_averages_list = sorted_averages_list[:3]
+
+                # selecting random feature from min 3 avg score
+
+                features_min_score = Features.objects.get(
+                    feature_id=feature_id_lst[averages_lst.index(random.choice(sorted_averages_list))])
+                cluster_feature_id = list(
+                    ClusterFeature.objects.filter(feature_id=features_min_score).values_list('cluster_id', flat=True))
+
+                # randomly choosing cluster
+                cluster_feature_id = random.choice(cluster_feature_id)
+                cluster_cluster_id = Clusters.objects.get(cluster_id=cluster_feature_id)
+                character_cluster = list(
+                    Characters.objects.filter(cluster_id=cluster_cluster_id).values_list('character_id', flat=True))
+
+                return Response(
+                    data=serializers.CharactersSerializer(
+                        Characters.objects.filter(character_id=random.choice(character_cluster)), many=True).data,
+                    status=status.HTTP_200_OK
+                )
+
         else:
+            next_exercise = WordsUrdu.objects.all().first().sequence_id
 
-            feature_score_vector = feature_model_pseudo("pseudo_path")
-            character_cluster_id = Characters.objects.values_list('cluster_id', flat=True).filter(
-                character_id=profile_session_character_id).latest('cluster_id')
+        return Response(
+            data=serializers.CharactersSerializer(
+                Characters.objects.filter(sequence_id=next_exercise), many=True).data,
+            status=status.HTTP_200_OK
+        )
 
-            cluster_feature_id = list(
-                ClusterFeature.objects.filter(cluster_id=character_cluster_id).values_list('feature_id',
-                                                                                           flat=True))
-            ## populating attept_feature with feature ids and score
-
-            for i in cluster_feature_id:
-                AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i),
-                                               score=feature_score_vector[i - 1],
-                                               attempt_id=History_attempt_id)
-
-            # finding average score of feature_id
-            from django.db.models import Avg
-
-            feature_averages_queryset = (AttemptFeatures.objects.values('feature_id').annotate(avg=Avg('score')))
-            averages_lst = list(feature_averages_queryset.values_list('avg', flat=True))
-            feature_id_lst = list(feature_averages_queryset.values_list('feature_id', flat=True))
-            sorted_averages_list = sorted(averages_lst)
-            if len(sorted_averages_list) > 3:
-                sorted_averages_list = sorted_averages_list[:3]
-
-            # selecting random feature from min 3 avg score
-
-            features_min_score = Features.objects.get(
-                feature_id=feature_id_lst[averages_lst.index(random.choice(sorted_averages_list))])
-            cluster_feature_id = list(
-                ClusterFeature.objects.filter(feature_id=features_min_score).values_list('cluster_id', flat=True))
-
-            # randomly choosing cluster
-            cluster_feature_id = random.choice(cluster_feature_id)
-            cluster_cluster_id = Clusters.objects.get(cluster_id=cluster_feature_id)
-            character_cluster = list(
-                Characters.objects.filter(cluster_id=cluster_cluster_id).values_list('character_id', flat=True))
-
-            return Response(
-                data=serializers.CharactersSerializer(
-                    Characters.objects.filter(character_id=random.choice(character_cluster)), many=True).data,
-                status=status.HTTP_204_NO_CONTENT
-            )
 
     @action(methods=["GET"], detail=False)
     def generate_urdu_object_exercise(self, request):
@@ -439,7 +522,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             data=serializers.ObjectWordSerializer(
                 ObjectWord.objects.filter(
                     Q(pk=record_id[0]) | Q(pk=record_id[1]) | Q(pk=record_id[2]) | Q(pk=record_id[3])), many=True).data,
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -466,7 +549,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                     'time_graph_path': dashboard_time_graph_path,
                     'score_graph_path': dashboard_score_graph_path,
                     'score_completion_path': dashboard_completion_graph_path},
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_200_OK
             )
         else:
 
@@ -606,7 +689,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                     'time_graph_path': dashboard_time_graph_path,
                     'score_graph_path': dashboard_score_graph_path,
                     'score_completion_path': dashboard_completion_graph_path},
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_200_OK
             )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -626,7 +709,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'time_taken_sum': time_taken_sum},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -649,7 +732,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'avg_time_taken': int(avg_time_taken)},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -675,7 +758,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'avg_score_sum': avg_score_sum},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -694,7 +777,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'completed_exercises_sum': completed_exercises},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -730,7 +813,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'exercise_review': lst_urdu_char},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -765,7 +848,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'exercise_review': lst_urdu_object},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -800,7 +883,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         return Response(
             data={'exercise_review': lst_drawing_ex},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
     @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
@@ -819,13 +902,14 @@ class AuthViewSet(viewsets.GenericViewSet):
         time_str = time.strftime("%Y%m%d-%H%M%S")
 
         stroke_path = get_stroke_path(data, profile_id, exercise_type, time_str)
+        score = 0.1
 
         if exercise_type == 0:  # drawing
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
-            score = (stroke_score + similarity_score) // 2
-            if score > 50:
-                is_completed = True
+            score = (stroke_score + similarity_score) / 2
             is_completed = False
+            if score > 0.5:
+                is_completed = True
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
                                    stroke_path=stroke_path,
@@ -842,17 +926,18 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         if exercise_type == 1:  # character
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
-            score = (stroke_score + similarity_score) // 2
-            if score > 60:
-                is_completed = True
+            score = (stroke_score + similarity_score) / 2
+            profile_character_id = Characters.objects.get(label=char)
             is_completed = False
+            if score > 0.60:
+                is_completed = True
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
                                    stroke_path=stroke_path,
                                    time_taken=random.randint(1, 20),
                                    datetime_attempt=timezone.now(),
                                    similarity_score=similarity_score,
-                                   character_id=Characters.objects.get(label=char),
+                                   character_id=profile_character_id,
                                    coloring_id=None,
                                    object_id=None,
                                    is_completed=is_completed,
@@ -860,12 +945,27 @@ class AuthViewSet(viewsets.GenericViewSet):
                                    word_id=None
                                    )
 
+            History_attempt_id = History.objects.latest('attempt_id')
+            feature_score_vector = feature_model_pseudo("pseudo_path")  # THIS WILL BE CHANGED AS THIS IS A RANDOM ARRAY
+            character_cluster_id = Characters.objects.values_list('cluster_id', flat=True).filter(
+                character_id=profile_character_id.character_id).latest('cluster_id')
+
+            cluster_feature_id = list(
+                ClusterFeature.objects.filter(cluster_id=character_cluster_id).values_list('feature_id',
+                                                                                           flat=True))
+            ## populating attept_feature with feature ids and score
+
+            for i in cluster_feature_id:
+                AttemptFeatures.objects.create(feature_id=Features.objects.get(feature_id=i),
+                                               score=feature_score_vector[i - 1],
+                                               attempt_id=History_attempt_id)
+
         if exercise_type == 2:  # words
             stroke_score, similarity_score = attempt_score(char, data, exercise_type)
-            score = (stroke_score + similarity_score) // 2
-            if score > 50:
-                is_completed = True
+            score = (stroke_score + similarity_score) / 2
             is_completed = False
+            if score > 0.5:
+                is_completed = True
             History.objects.create(profile_id=ChildProfile.objects.get(profile_id=profile_id),
                                    stroke_score=stroke_score,
                                    stroke_path=stroke_path,
@@ -889,80 +989,63 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(
             data=serializers.HistorySerializer(
                 History.objects.all(), many=True).data,
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
 
-    # THIS FUNCTION WAS ONLY FOR ME TO TOO AND SEE  DATA SO PLEASE DON'T USE IT
-    # @action(methods=['GET'], detail=False, permission_classes=[IsAuthenticated, ])
-    # def insert_data(self, request):
-    #     words = ['alif', 'ttaa', 'paa', 'seey', 'baa', 'taa', 'daal', 'zaal', 'dhaal', 'seen', 'sheen', 'zwaad',
-    #              'swaad']
-    #     for i in range(1, 5):
-    #         His = History(profile_id=ChildProfile.objects.get(profile_id=i),
-    #                       stroke_score=random.random(),
-    #                       stroke_path='/strokes/' + words[i] + '.txt',
-    #                       time_taken=random.randint(1, 100),
-    #                       datetime_attempt=timezone.now(),
-    #                       similarity_score=random.random(),
-    #                       character_id=Characters.objects.get(character_id=i),
-    #                       coloring_id=None,
-    #                       object_id=None,
-    #                       is_completed=True,
-    #                       drawing_id=None,
-    #                       word_id=None
-    #                       )
-    #         His.save()
-    #
-    #     for i in range(1, 5):
-    #         His = History(profile_id=ChildProfile.objects.get(profile_id=i),
-    #                       stroke_score=random.random(),
-    #                       stroke_path='/strokes/' + words[i] + '.txt',
-    #                       time_taken=random.randint(1, 100),
-    #                       datetime_attempt=timezone.now(),
-    #                       similarity_score=random.random(),
-    #                       character_id=None,
-    #                       coloring_id=None,
-    #                       object_id=ObjectWord.objects.get(object_id=i),
-    #                       is_completed=True,
-    #                       drawing_id=None,
-    #                       word_id=None
-    #                       )
-    #         His.save()
-    #
-    #     for i in range(1, 5):
-    #         His = History(profile_id=ChildProfile.objects.get(profile_id=i),
-    #                       stroke_score=random.random(),
-    #                       stroke_path='/strokes/' + words[i] + '.txt',
-    #                       time_taken=random.randint(1, 100),
-    #                       datetime_attempt=timezone.now(),
-    #                       similarity_score=random.random(),
-    #                       character_id=None,
-    #                       coloring_id=None,
-    #                       object_id=None,
-    #                       is_completed=True,
-    #                       drawing_id=DrawingExercise.objects.get(drawing_id=i),
-    #                       word_id=None
-    #                       )
-    #         His.save()
-    #
-    #     for i in range(1, 5):
-    #         His = History(profile_id=ChildProfile.objects.get(profile_id=i),
-    #                       stroke_score=random.random(),
-    #                       stroke_path='/strokes/' + words[i] + '.txt',
-    #                       time_taken=random.randint(1, 100),
-    #                       datetime_attempt=timezone.now(),
-    #                       similarity_score=random.random(),
-    #                       character_id=None,
-    #                       coloring_id=None,
-    #                       object_id=None,
-    #                       is_completed=True,
-    #                       drawing_id=None,
-    #                       word_id=WordsUrdu.objects.get(word_id=i),
-    #                       )
-    #         His.save()
-    #
-    #     return Response(
-    #         data=serializers.HistorySerializer(
-    #             History.objects.all(), many=True).data,
-    #         status=status.HTTP_204_NO_CONTENT
-    #     )
+    @action(methods=['GET'], detail=False)
+    def insert_data(self, request):
+        words = ['alif', 'ttaa', 'paa', 'seey', 'baa', 'taa', 'daal', 'zaal', 'dhaal', 'seen', 'sheen', 'zwaad',
+                 'swaad']
+        for i in range(1, 5):
+            His = History(profile_id=ChildProfile.objects.get(profile_id=i),
+                          stroke_score=random.random(),
+                          stroke_path='/strokes/' + words[i] + '.txt',
+                          time_taken=random.randint(1, 100),
+                          datetime_attempt=timezone.now(),
+                          similarity_score=random.random(),
+                          character_id=Characters.objects.get(character_id=i),
+                          coloring_id=None,
+                          object_id=None,
+                          is_completed=True,
+                          drawing_id=None,
+                          word_id=None
+                          )
+            His.save()
+
+        for i in range(1, 5):
+            His = History(profile_id=ChildProfile.objects.get(profile_id=i),
+                          stroke_score=random.random(),
+                          stroke_path='/strokes/' + words[i] + '.txt',
+                          time_taken=random.randint(1, 100),
+                          datetime_attempt=timezone.now(),
+                          similarity_score=random.random(),
+                          character_id=None,
+                          coloring_id=None,
+                          object_id=None,
+                          is_completed=True,
+                          drawing_id=DrawingExercise.objects.get(drawing_id=i),
+                          word_id=None
+                          )
+            His.save()
+
+        for i in range(1, 5):
+            His = History(profile_id=ChildProfile.objects.get(profile_id=i),
+                          stroke_score=random.random(),
+                          stroke_path='/strokes/' + words[i] + '.txt',
+                          time_taken=random.randint(1, 100),
+                          datetime_attempt=timezone.now(),
+                          similarity_score=random.random(),
+                          character_id=None,
+                          coloring_id=None,
+                          object_id=None,
+                          is_completed=True,
+                          drawing_id=None,
+                          word_id=WordsUrdu.objects.get(word_id=i),
+                          )
+            His.save()
+
+        return Response(
+            data=serializers.HistorySerializer(
+                History.objects.all(), many=True).data,
+            status=status.HTTP_200_OK
+        )
