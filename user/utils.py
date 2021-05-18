@@ -204,6 +204,6 @@ def get_stroke_path(data, profile_id_stroke, exercise_type, time_stamp):
     plt.axis('off')
     plt.savefig(os.path.join(__location__, path))
 
-    push_image_file(path, stroke_name)
+    # push_image_file(path, stroke_name)
 
     return 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/strokes/' + stroke_name
