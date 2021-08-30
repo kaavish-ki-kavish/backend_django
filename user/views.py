@@ -19,7 +19,7 @@ from .models import ChildProfile, Characters, History, ObjectWord, ColoringExerc
 from rest_framework.response import Response
 from . import serializers
 from .utils import get_and_authenticate_user, create_user_account, create_child_profile, delete_child_profile, \
-    edit_child_profile, push_file, push_image_file, get_whole_stroke, get_stroke_path
+    edit_child_profile, push_file, push_image_file, get_whole_stroke, get_stroke_path, insert_char_to_db
 
 from .classifier import RandomForestClassifier
 from .feature_extractor import hbr_feature_extract, scale_strokes
@@ -30,6 +30,7 @@ import sys
 import requests
 import time
 import seaborn as sns
+import pandas
 
 # from django.shortcuts import render
 # from .apps import PredictorConfig
@@ -465,8 +466,20 @@ class AuthViewSet(viewsets.GenericViewSet):
         # child profile_id to session session_id to History character_id to Character sequence_id
 
         profile_id = request.data.get('profile_id', None)
-
+        next_exercise = Characters.objects.all().first().sequence_id
         profile_char_hist = History.objects.filter(profile_id=profile_id).filter(character_id__isnull=False)
+        total_char_exercises = Characters.objects.all().count()
+        completed_count = profile_char_hist.filter(is_completed=True).count()
+
+        #we go in sequence here
+        if total_char_exercises > completed_count:
+            latest_char_id = profile_char_hist.latest('character_id').character_id.sequence_id
+            next_exercise = latest_char_id + 1
+
+        next_exercise = next_exercise % total_char_exercises
+
+
+        '''
         
         if profile_char_hist:
             total_char_exercises = Characters.objects.all().count()
@@ -502,9 +515,10 @@ class AuthViewSet(viewsets.GenericViewSet):
                         Characters.objects.filter(character_id=random.choice(character_cluster)), many=True).data,
                     status=status.HTTP_200_OK
                 )
+        '''
 
-        else:
-            next_exercise = Characters.objects.all().first().sequence_id
+
+
 
         return Response(
             data=serializers.CharactersSerializer(
@@ -1006,6 +1020,18 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(
             data=serializers.HistorySerializer(
                 History.objects.all(), many=True).data,
+            status=status.HTTP_200_OK
+        )
+
+    @action(methods=['GET'], detail=False)
+    def insert_characters(self, request):
+        data_csv = pandas.read_csv("https://github.com/kaavish-ki-kavish/aangan-filesystem/blob/main/aagan-urdu-filesystem/urdu_file_dir.csv")
+        for iter, row in data_csv.iterrows():
+            insert_char_to_db(row, iter)
+        Characters.save()
+        return Response(
+            data=serializers.CharactersSerializer(
+                Characters.objects.all(), many=True).data,
             status=status.HTTP_200_OK
         )
 

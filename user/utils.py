@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, get_user_model, login
 from rest_framework import serializers
-from .models import ChildProfile
+from .models import ChildProfile, Characters
 from github import Github
 import base64
 from PIL import Image, ImageDraw
@@ -207,3 +207,10 @@ def get_stroke_path(data, profile_id_stroke, exercise_type, time_stamp):
     # push_image_file(path, stroke_name)
 
     return 'https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/strokes/' + stroke_name
+
+
+def insert_char_to_db(row, num):
+    start = 1000
+    base_path = "https://github.com/kaavish-ki-kavish/aangan-filesystem/tree/main/aagan-urdu-filesystem/"
+    char = Characters(character_id = start + num, level = 0, ref_stroke_path = base_path + row['letter_image_path'], ref_object_path =base_path + row['object_image_path'], label = row['label'], sound_path = base_path +row['object_sound_path'], sequence_id = start + num)
+    char.save()
