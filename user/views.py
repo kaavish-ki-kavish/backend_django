@@ -451,7 +451,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             status=status.HTTP_200_OK
         )
 
-    @action(methods=['POST'], detail=False, permission_classes=[IsAuthenticated, ])
+    @action(methods=['POST'], detail=False)
     def generate_character_exercise(self, request):
         """
         inputs: profile_id (child profile id), is_seq (1 / 0) : indicating if character will be generated in sequence or no.
@@ -469,7 +469,10 @@ class AuthViewSet(viewsets.GenericViewSet):
         profile_char_hist = History.objects.filter(profile_id=profile_id).filter(character_id__isnull=False)
         total_exercises = 40
         start_point = 3000
-        latest_char_id = profile_char_hist.latest('character_id').character_id.sequence_id
+        if profile_char_hist.count():
+            latest_char_id = profile_char_hist.latest('character_id').character_id.sequence_id
+        else:
+            latest_char_id = 0
 
         if latest_char_id < start_point:
             next_exercise = start_point
