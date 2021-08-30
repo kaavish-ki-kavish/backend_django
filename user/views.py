@@ -1025,7 +1025,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(methods=['GET'], detail=False)
     def insert_characters(self, request):
-        data_csv = pandas.read_csv("https://github.com/kaavish-ki-kavish/aangan-filesystem/blob/main/aagan-urdu-filesystem/urdu_file_dir.csv")
+        data_csv = pandas.read_csv("https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/urdu_file_dir.csv", sep = ",")
         for iter, row in data_csv.iterrows():
             insert_char_to_db(row, iter)
         Characters.save()
