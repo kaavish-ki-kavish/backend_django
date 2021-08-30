@@ -1028,7 +1028,6 @@ class AuthViewSet(viewsets.GenericViewSet):
         data_csv = pandas.read_csv("https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/urdu_file_dir.csv", sep = ",")
         for iter, row in data_csv.iterrows():
             insert_char_to_db(row, iter)
-        Characters.save()
         return Response(
             data=serializers.CharactersSerializer(
                 Characters.objects.all(), many=True).data,
