@@ -466,17 +466,18 @@ class AuthViewSet(viewsets.GenericViewSet):
         # child profile_id to session session_id to History character_id to Character sequence_id
 
         profile_id = request.data.get('profile_id', None)
-        next_exercise = Characters.objects.all().first().sequence_id
         profile_char_hist = History.objects.filter(profile_id=profile_id).filter(character_id__isnull=False)
-        total_char_exercises = Characters.objects.all().count()
-        completed_count = profile_char_hist.filter(is_completed=True).count()
+        total_exercises = 40
+        start_point = 2000
+        latest_char_id = profile_char_hist.latest('character_id').character_id.sequence_id
 
-        #we go in sequence here
-        if total_char_exercises > completed_count:
-            latest_char_id = profile_char_hist.latest('character_id').character_id.sequence_id
-            next_exercise = latest_char_id + 1
+        if latest_char_id < 2000:
+            next_exercise = start_point
+        else:
+            next_exercise = (latest_char_id + 1) % (total_exercises + start_point)
 
-        next_exercise = next_exercise % total_char_exercises
+
+
 
 
         '''
