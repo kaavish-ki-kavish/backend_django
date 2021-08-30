@@ -105,13 +105,13 @@ class History(models.Model):
     stroke_score = models.FloatField(null=True, blank=True)
     similarity_score = models.FloatField(null=True, blank=True)
     datetime_attempt = models.DateTimeField(null=False)
-    character_id = models.ForeignKey(Characters, on_delete=models.PROTECT, null=True, blank=True)
-    drawing_id = models.ForeignKey(DrawingExercise, on_delete=models.PROTECT, null=True, blank=True)
-    coloring_id = models.ForeignKey(ColoringExercise, on_delete=models.PROTECT, null=True, blank=True)
-    object_id = models.ForeignKey(ObjectWord, on_delete=models.PROTECT, null=True, blank=True)
+    character_id = models.ForeignKey(Characters, on_delete=models.CASCADE, null=True, blank=True)
+    drawing_id = models.ForeignKey(DrawingExercise, on_delete=models.CASCADE, null=True, blank=True)
+    coloring_id = models.ForeignKey(ColoringExercise, on_delete=models.CASCADE, null=True, blank=True)
+    object_id = models.ForeignKey(ObjectWord, on_delete=models.CASCADE, null=True, blank=True)
     is_completed = models.BooleanField()
-    profile_id = models.ForeignKey(ChildProfile, on_delete=models.PROTECT)
-    word_id = models.ForeignKey(WordsUrdu, on_delete=models.PROTECT, null=True, blank=True)
+    profile_id = models.ForeignKey(ChildProfile, on_delete=models.CASCADE)
+    word_id = models.ForeignKey(WordsUrdu, on_delete=models.CASCADE, null=True, blank=True)
 
 
 class Features(models.Model):
