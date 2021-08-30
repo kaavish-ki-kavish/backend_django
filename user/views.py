@@ -468,10 +468,10 @@ class AuthViewSet(viewsets.GenericViewSet):
         profile_id = request.data.get('profile_id', None)
         profile_char_hist = History.objects.filter(profile_id=profile_id).filter(character_id__isnull=False)
         total_exercises = 40
-        start_point = 2000
+        start_point = 3000
         latest_char_id = profile_char_hist.latest('character_id').character_id.sequence_id
 
-        if latest_char_id < 2000:
+        if latest_char_id < start_point:
             next_exercise = start_point
         else:
             next_exercise = (latest_char_id + 1) % (total_exercises + start_point)

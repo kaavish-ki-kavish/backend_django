@@ -210,7 +210,7 @@ def get_stroke_path(data, profile_id_stroke, exercise_type, time_stamp):
 
 
 def insert_char_to_db(row, num):
-    start = 2000
+    start = 3000
     base_path = "https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem"
     char = Characters(character_id = start + num, level = 0, ref_stroke_path = base_path + row['letter_image_path'], ref_object_path =base_path + row['object_image_path'], label = row['label'], sound_path = base_path +row['object_sound_path'], sequence_id = start + num)
     char.save()
