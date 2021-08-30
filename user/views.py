@@ -268,5 +268,5 @@ class AuthViewSet(viewsets.GenericViewSet):
         response = {
             'scores': scores,
         }
-
+        print("Test")
         return Response(response)
