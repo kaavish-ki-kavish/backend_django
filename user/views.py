@@ -468,7 +468,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         profile_id = request.data.get('profile_id', None)
         profile_char_hist = History.objects.filter(profile_id=profile_id).filter(character_id__isnull=False)
         total_exercises = 35
-        start_point = 3020
+        start_point = 3000
         if profile_char_hist.count():
             latest_char_id = profile_char_hist.latest('character_id').character_id.sequence_id
         else:
