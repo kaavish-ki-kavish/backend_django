@@ -30,7 +30,7 @@ import sys
 import requests
 import time
 import seaborn as sns
-import pandas
+import pandas as pd
 
 # from django.shortcuts import render
 # from .apps import PredictorConfig
@@ -467,7 +467,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         profile_id = request.data.get('profile_id', None)
         profile_char_hist = History.objects.filter(profile_id=profile_id).filter(character_id__isnull=False)
-        total_exercises = 40
+        total_exercises = 37
         start_point = 3000
         if profile_char_hist.count():
             latest_char_id = profile_char_hist.latest('character_id').character_id.sequence_id
@@ -476,8 +476,36 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         if latest_char_id < start_point:
             next_exercise = start_point
-        else:
+        elif latest_char_id < start_point + total_exercises:
             next_exercise = (latest_char_id + 1) % (total_exercises + start_point)
+        else:
+            #convert to df
+            attempted_ex = pd.DataFrame.from_records(profile_char_hist.objects.all().values())
+            #calc average score
+            attempted_ex['avg_score'] = (attempted_ex['similarity_score'] + attempted_ex['stroke_score']) /2
+            #all exerices
+            all_exercises = pd.read_csv("https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/urdu_file_dir.csv", sep = ",")
+            #adding a column thatll help with join
+            all_exercises['id'] = list(range(start_point, start_point + total_exercises))
+            #left join, doing this to get cluster id with character
+            attempted_ex = attempted_ex.merge(all_exercises, how = "left", left_on="character_id", right_on="id", suffixes=["_x", None])
+            #grouping by clusters and computing the mean of average score
+            grouped = attempted_ex.groupby("cluster_id").agg({'avg_score': "mean"})
+            #getting the 3 clusters with the least score
+            grouped = grouped.sort_values(by = "avg_score").head(3)
+            rel_clusters = list(grouped['cluster_id'])
+            rand_val = random.random()
+            #this is the cluster we want to generate exercises from
+            my_cluster = rel_clusters[2] if rand_val > 0.9 else rel_clusters[1] if rand_val > 0.6 else rel_clusters[0]
+
+            #character id of the exercise that we want to throw
+            character_id = random.choice(all_exercises[all_exercises['cluster_id'] == my_cluster]['id'])
+
+            next_exercise = character_id
+
+
+
+
 
 
 
@@ -1030,7 +1058,7 @@ class AuthViewSet(viewsets.GenericViewSet):
     @action(methods=['GET'], detail=False)
     def insert_characters(self, request):
         Characters.objects.all().delete()
-        data_csv = pandas.read_csv("https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/urdu_file_dir.csv", sep = ",")
+        data_csv = pd.read_csv("https://raw.githubusercontent.com/kaavish-ki-kavish/aangan-filesystem/main/aagan-urdu-filesystem/urdu_file_dir.csv", sep = ",")
         for iter, row in data_csv.iterrows():
             insert_char_to_db(row, iter)
         return Response(
